@@ -4,7 +4,7 @@ TooGoodToPark is a full-stack web application built with Vue.js frontend and Nod
 
 ## 📋 Table of Contents
 
-- [Project Overview](#project-overview)
+- [Project Overview](#Project Overview)
 - [Technical Specifications](#technical-specifications)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
@@ -138,10 +138,12 @@ This command will:
 - Enable hot-reload for both applications
 
 ### Individual Services
-**Backend only:**``` bash
+**Backend only:**
+```bash
 npm run dev:backend
 ```
-**Frontend only:**``` bash
+**Frontend only:**
+```bash
 npm run dev:frontend
 ```
 
