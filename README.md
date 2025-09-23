@@ -132,3 +132,128 @@ Run both frontend and backend concurrently:
 ```bash
 npm run dev
 ```
+This command will:
+- Start the backend server on `http://localhost:3000`
+- Start the frontend development server on `http://localhost:5173`
+- Enable hot-reload for both applications
+
+### Individual Services
+**Backend only:**``` bash
+npm run dev:backend
+```
+**Frontend only:**``` bash
+npm run dev:frontend
+```
+
+Production Build
+Build the frontend for production:``` bash
+npm run build
+```
+
+Project Structure``` 
+TooGoodToPark/
+├── backend/                 # Node.js/Express backend
+│   ├── api/                # API routes and middleware
+│   │   ├── middleware/     # Custom middleware
+│   │   └── routes/        # API route definitions
+│   ├── database/          # Database related files
+│   ├── logs/              # Application logs
+│   ├── services/          # Business logic services
+│   ├── .env               # Environment variables
+│   ├── server.js          # Main server file
+│   ├── databaseconf.sql   # Database setup script
+│   └── package.json       # Backend dependencies
+├── frontend/               # Vue.js frontend
+│   ├── src/               # Source code
+│   │   ├── assets/        # Static assets
+│   │   ├── components/    # Vue components
+│   │   ├── pages/         # Page components
+│   │   ├── services/      # Frontend services
+│   │   ├── stores/        # Pinia stores
+│   │   ├── App.vue        # Main App component
+│   │   └── main.js        # Entry point
+│   ├── public/            # Public assets
+│   ├── index.html         # HTML template
+│   ├── vite.config.js     # Vite configuration
+│   └── package.json       # Frontend dependencies
+├── node_modules/          # Shared dependencies
+├── package.json           # Root package.json with workspaces
+└── README.md             # This file
+```
+
+**API Endpoints**
+The backend exposes REST API endpoints with JWT authentication:
+  - Base URL: http://localhost:3000
+  - Authentication: JWT tokens via cookies
+  - CORS: Configured for http://localhost:5173
+
+**Authentication**
+  - Login routes available at /api/login
+  - Protected routes require JWT authentication
+
+**Development**
+**Frontend Development**
+  - Hot-reload enabled via Vite
+  - Vue DevTools available in development
+  - State management with Pinia
+  -Persistent state across browser sessions
+
+**Backend Development**
+  - Express server with middleware support
+  - JWT-based authentication
+  - Role-based permission system
+  - MySQL database integration
+  - Request logging and error handling
+
+**Available Scripts**
+_Root level:_
+  - npm run dev - Run both frontend and backend
+  - npm run dev:frontend - Run frontend only
+  - npm run dev:backend - Run backend only
+  - npm run build - Build frontend for production
+  - npm run install:all - Install all dependencies
+_Frontend workspace:_
+  - npm run dev --workspace=frontend - Development server
+  - npm run build --workspace=frontend - Production build
+  - npm run preview --workspace=frontend - Preview production build
+_Backend workspace:_
+  - npm run start --workspace=backend - Start backend server
+
+
+**Troubleshooting**
+_Common Issues_
+  1) Port already in use
+     - Backend (3000): Change PORT in backend/.env
+     - Frontend (5173): Vite will automatically try the next available port
+  
+  2) Database connection issues
+     - Ensure MySQL server is running
+     - Verify database credentials in backend/.env
+     - Check if database ToPaD and user ToPa exist
+     
+  3) CORS errors
+     - Verify frontend URL in backend CORS configuration
+     - Check if both servers are running on expected ports
+
+  4) Dependencies issues
+     - Delete node_modules folders and run npm run install:all
+  - Ensure Node.js version meets requirements
+
+
+**License**
+This project is private and not licensed for public use.
+
+For additional support or questions, please refer to the project documentation or contact the development team.```
+
+This comprehensive README provides:
+
+1. **Complete project overview** with technical specifications
+2. **Detailed installation instructions** including database setup
+3. **Configuration guidelines** for both frontend and backend
+4. **Multiple ways to run the application** (development/production)
+5. **Clear project structure** explanation
+6. **Troubleshooting section** for common issues
+7. **Professional formatting** with proper sections and badges
+
+The README is based on the actual project structure and configuration files I analyzed, ensuring accuracy and completeness.
+```
