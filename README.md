@@ -148,11 +148,13 @@ npm run dev:frontend
 ```
 
 Production Build
-Build the frontend for production:``` bash
+Build the frontend for production:
+```bash
 npm run build
 ```
 
-Project Structure``` 
+Project Structure
+``` 
 TooGoodToPark/
 ├── backend/                 # Node.js/Express backend
 │   ├── api/                # API routes and middleware
@@ -243,6 +245,7 @@ _Common Issues_
 
 
 **License**
+
 This project is private and not licensed for public use.
 
 For additional support or questions, please refer to the project documentation or contact the development team.```
