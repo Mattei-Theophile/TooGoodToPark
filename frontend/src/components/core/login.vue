@@ -62,7 +62,7 @@ async function onSubmit() {
     }
 
     // Navigate after login (adjust route as needed)
-    await router.push('/user')
+    await router.push('/account')
 
     console.log("redirecting to user");
   } catch (err: any) {

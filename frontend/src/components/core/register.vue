@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import {reactive, ref} from 'vue'
-import {useRouter} from 'vue-router'
+import {useRouter} from "vue-router";
 
+const router = useRouter();
 // Simple reactive form model
 const form = reactive({
   email: '',
@@ -18,7 +19,7 @@ const successMessage = ref<string | null>(null)
 // Optional: read base URL from Vite env (fallback to same-origin)
 const API_BASE = 'http://localhost:3000'
 
-const router = useRouter()
+
 
 async function onSubmit() {
   errorMessage.value = null

@@ -6,7 +6,7 @@ import {settingsStore} from '@/stores/SettingsStore'
 
 let navMenu = ref(false)
 
-const userLoggedIn = computed(() => {isLoggedIn()})
+const userLoggedIn = computed(() => {return isLoggedIn()})
 const settings = settingsStore()
 </script>
 
@@ -14,15 +14,12 @@ const settings = settingsStore()
 
   <div class="navbar">
     <div class="logo" @click="$router.push('/')">
-      <logo width="70" height="70" />
+
       <h2> TooGood <br> ToPark </h2>
     </div>
 
     <div class="nav-links-menu">
       <nav class="nav-links">
-        <router-link to="/">Accueil</router-link>
-        <router-link to="/shop">Notre projet</router-link>
-        <router-link to="/shop">Boutique</router-link>
 
 
         <div class="login" @click="navMenu = !navMenu" >
@@ -35,7 +32,7 @@ const settings = settingsStore()
         <div v-if="navMenu" class="nav-account-menu">
 
           <router-link to="/account"> My account </router-link>
-          <router-link v-if="!userLoggedIn" to="/connexion"> se connecter </router-link>
+          <router-link v-if="!userLoggedIn" to="/connect"> se connecter </router-link>
           <router-link v-else to="/" @click="logout()"> se déconnecter </router-link>
 
 
@@ -45,7 +42,6 @@ const settings = settingsStore()
     </div>
   </div>
 
-  <ThemeSwitcher />
 </template>
 
 <style scoped>

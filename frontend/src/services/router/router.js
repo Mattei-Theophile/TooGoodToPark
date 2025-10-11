@@ -6,9 +6,12 @@ import Home from "@/pages/client/Home.vue";
 import Account from "@/pages/Account.vue";
 import Settings from "@/pages/Settings.vue";
 import Announce from "@/pages/client/Announce.vue";
-
+import History from "@/pages/client/History.vue";
 import Login from "@/components/core/login.vue";
 import Register from "@/components/core/register.vue";
+import Search from "@/pages/client/Search.vue";
+import Car from "@/pages/Car.vue";
+import Reserve from "@/pages/Reserve.vue";
 
 const routes = [
     {
@@ -20,7 +23,7 @@ const routes = [
         }
     },
     {
-        path:'/announce',
+        path:'/announce/',
         name:'Announce',
         component:Announce,
         meta:{
@@ -28,15 +31,50 @@ const routes = [
         }
     },
     {
-        path:'/connect',
-        name:'Auth',
-        component:Auth,
+        path:'/history',
+        name:'History',
+        component:History,
         meta:{
+            requireAuth:true,
+        }
+    },
+    {
+      path:"/car/:id",
+      name:'Car',
+      component:Car,
+      meta:{
+        requireAuth:false,
+      },
+      props:true
+    },
+    {
+      path:"/reserve/:dday-:dreturn",
+      name:'Reserve',
+      component:Reserve,
+      meta:{
+        requireAuth:true,
+      },
+      props:true
+    },
+    {
+      path:"/search",
+      name:'Search',
+      component:Search,
+      meta:{
+          requireAuth:false,
+      },
+      props: true
+    },
+    {
+      path:'/connect',
+      name:'Auth',
+      component:Auth,
+      meta:{
             requireAuth:false,
-        },
-        children: [
+      },
+      children: [
             {
-                path: '',
+                path: '/',
                 redirect:'/login'
             },
             {
@@ -49,7 +87,7 @@ const routes = [
                 name: 'Register',
                 component: Register
             }
-        ]
+            ]
     },
     {
         path:'/account',

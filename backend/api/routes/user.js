@@ -1,5 +1,5 @@
 const permission = require("../middleware/permissionMiddleware");
-const auth =  require("../../services/auth");
+const auth =  require("../../services/login/auth");
 const register = require("../../services/register");
 
 module.exports = {

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const {Database} = require('../database/database');
+const {Database} = require('../../database/database');
 const jwt_key = process.env.JWT_KEY;
 
 function generateToken(user, expiresIn = '1h') {
@@ -43,7 +43,6 @@ async function comparePassword(plainPassword, hashedPassword) {
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
     if (!token) {
         return res.status(401).json({ error: 'Access token required' });
     }

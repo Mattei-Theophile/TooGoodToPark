@@ -28,7 +28,9 @@ const handleCookieConsent = (consent) => {
 <template>
   <Header />
   <main>
+
     <router-view />
+
   </main>
 
   <Footer />
@@ -63,6 +65,11 @@ header {
     place-items: flex-start;
     flex-wrap: wrap;
   }
+}
+
+main{
+  margin-top: 1rem;
+
 }
 
 </style>

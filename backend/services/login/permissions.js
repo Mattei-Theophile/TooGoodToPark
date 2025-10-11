@@ -1,4 +1,4 @@
-const {Database} = require('../database/database');
+const {Database} = require('../../database/database');
 
 class PermissionService {
     constructor() {
@@ -189,6 +189,8 @@ class PermissionService {
      * @returns {Promise<void>}
      */
     async logActivity(userId, action, resourceType, resourceId = null, details = {}, ipAddress = null, userAgent = null) {
+        console.log(`Activity logged: User ${userId} performed action ${action} on ${resourceType} ${resourceId}`);
+        console.log('Details:', details);
         try {
             await this.connection.promise().query(`
                 INSERT INTO Activity_Log 
@@ -203,7 +205,8 @@ class PermissionService {
                 ipAddress,
                 userAgent
             ]);
-        } catch (error) {
+           }
+           catch (error) {
             console.error('Error logging activity:', error);
         }
     }

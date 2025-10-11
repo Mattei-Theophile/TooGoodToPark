@@ -1,4 +1,4 @@
-const permissionService = require('../../services/permissions');
+const permissionService = require('../../services/login/permissions');
 
 /**
  * Middleware to check if user has required permission

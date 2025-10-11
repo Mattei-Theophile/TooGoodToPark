@@ -27,8 +27,6 @@ export const login = async (email, password) => {
 
 export const isLoggedIn = () => {
     const token = localStorage.getItem('auth_token');
-    console.log(token);
-    console.log("The user is logged in: " + (token !== null && token !== undefined));
     return token !== null && token !== undefined;
 }
 

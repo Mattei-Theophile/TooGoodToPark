@@ -9,7 +9,7 @@ const { apiLogger } = require('./services/logger')
 const colors = require('colors')
 
 const loginRoutes = require('./api/routes/login');
-const { authenticateToken } = require('./services/auth');
+const { authenticateToken } = require('./services/login/auth');
 
 const PORT = process.env.PORT || 3000;
 
@@ -27,7 +27,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
 // API request/response logging middleware (applies to all /api/* routes)
 app.use('/api', apiLogger);
-
+app.use('/uploads', express.static('uploads'));
 app.disable('x-powered-by');
 
 

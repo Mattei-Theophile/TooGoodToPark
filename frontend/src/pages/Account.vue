@@ -29,7 +29,7 @@ fetch('http://localhost:3000/api/account/me', {
 </script>
 
 <template>
-
+ <p> Account</p>
 </template>
 
 <style scoped>
