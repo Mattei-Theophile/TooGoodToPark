@@ -110,9 +110,7 @@ const fetchCarImages = async () => {
       </svg>
     </button>
     <div>
-      <FunctionalCalendar
-        v-model="calendarData"
-        />
+
     </div>
 
   </div>
