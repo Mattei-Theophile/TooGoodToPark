@@ -112,6 +112,7 @@ const fetchCarImages = async () => {
     <div>
       <FunctionalCalendar
         v-model="calendarData"
+        />
     </div>
 
   </div>
