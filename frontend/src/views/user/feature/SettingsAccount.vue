@@ -1,15 +1,5 @@
 <script setup>
-import {useSettings} from '@/services/settings/SettingsService.js'
-import {onMounted} from 'vue'
-
-const {
-  settings,
-  isLoading,
-  error,
-  loadSettings,
-  updateSetting,
-  resetSettings
-} = useSettings()
+import { onMounted } from 'vue'
 
 onMounted(() => {
   loadSettings()
@@ -18,26 +8,26 @@ onMounted(() => {
 const themes = [
   { value: 'light', label: 'Clair' },
   { value: 'dark', label: 'Sombre' },
-  { value: 'auto', label: 'Automatique' }
+  { value: 'auto', label: 'Automatique' },
 ]
 
 const imageQualities = [
   { value: 'low', label: 'Faible' },
   { value: 'medium', label: 'Moyenne' },
   { value: 'high', label: 'Haute' },
-  { value: 'ultra', label: 'Ultra' }
+  { value: 'ultra', label: 'Ultra' },
 ]
 
 const languages = [
   { value: 'fr', label: 'Français' },
   { value: 'en', label: 'English' },
-  { value: 'es', label: 'Español' }
+  { value: 'es', label: 'Español' },
 ]
 
 const fontSizes = [
   { value: 'small', label: 'Petite' },
   { value: 'medium', label: 'Moyenne' },
-  { value: 'large', label: 'Grande' }
+  { value: 'large', label: 'Grande' },
 ]
 </script>
 
@@ -45,13 +35,9 @@ const fontSizes = [
   <section class="main-content">
     <h2>Mes paramètres</h2>
 
-    <div v-if="isLoading" class="loading">
-      Chargement des paramètres...
-    </div>
+    <div v-if="isLoading" class="loading">Chargement des paramètres...</div>
 
-    <div v-if="error" class="error">
-      Erreur : {{ error }}
-    </div>
+    <div v-if="error" class="error">Erreur : {{ error }}</div>
 
     <div v-if="!isLoading && settings">
       <!-- Apparence -->
@@ -60,15 +46,8 @@ const fontSizes = [
 
         <div class="setting-item">
           <label>Thème</label>
-          <select
-              :value="settings.theme"
-              @change="updateSetting('theme', $event.target.value)"
-          >
-            <option
-                v-for="theme in themes"
-                :key="theme.value"
-                :value="theme.value"
-            >
+          <select :value="settings.theme" @change="updateSetting('theme', $event.target.value)">
+            <option v-for="theme in themes" :key="theme.value" :value="theme.value">
               {{ theme.label }}
             </option>
           </select>
@@ -77,14 +56,10 @@ const fontSizes = [
         <div class="setting-item">
           <label>Langue</label>
           <select
-              :value="settings.language"
-              @change="updateSetting('language', $event.target.value)"
+            :value="settings.language"
+            @change="updateSetting('language', $event.target.value)"
           >
-            <option
-                v-for="lang in languages"
-                :key="lang.value"
-                :value="lang.value"
-            >
+            <option v-for="lang in languages" :key="lang.value" :value="lang.value">
               {{ lang.label }}
             </option>
           </select>
@@ -93,14 +68,10 @@ const fontSizes = [
         <div class="setting-item">
           <label>Taille de police</label>
           <select
-              :value="settings.fontSize"
-              @change="updateSetting('fontSize', $event.target.value)"
+            :value="settings.fontSize"
+            @change="updateSetting('fontSize', $event.target.value)"
           >
-            <option
-                v-for="size in fontSizes"
-                :key="size.value"
-                :value="size.value"
-            >
+            <option v-for="size in fontSizes" :key="size.value" :value="size.value">
               {{ size.label }}
             </option>
           </select>
@@ -114,14 +85,10 @@ const fontSizes = [
         <div class="setting-item">
           <label>Qualité de l'image</label>
           <select
-              :value="settings.imageQuality"
-              @change="updateSetting('imageQuality', $event.target.value)"
+            :value="settings.imageQuality"
+            @change="updateSetting('imageQuality', $event.target.value)"
           >
-            <option
-                v-for="quality in imageQualities"
-                :key="quality.value"
-                :value="quality.value"
-            >
+            <option v-for="quality in imageQualities" :key="quality.value" :value="quality.value">
               {{ quality.label }}
             </option>
           </select>
@@ -130,23 +97,23 @@ const fontSizes = [
         <div class="setting-item">
           <label>Niveau de compression</label>
           <input
-              type="range"
-              min="10"
-              max="100"
-              step="10"
-              :value="settings.compressionLevel"
-              @input="updateSetting('compressionLevel', parseInt($event.target.value))"
-          >
+            type="range"
+            min="10"
+            max="100"
+            step="10"
+            :value="settings.compressionLevel"
+            @input="updateSetting('compressionLevel', parseInt($event.target.value))"
+          />
           <span>{{ settings.compressionLevel }}%</span>
         </div>
 
         <div class="setting-item">
           <label>
             <input
-                type="checkbox"
-                :checked="settings.autoSave"
-                @change="updateSetting('autoSave', $event.target.checked)"
-            >
+              type="checkbox"
+              :checked="settings.autoSave"
+              @change="updateSetting('autoSave', $event.target.checked)"
+            />
             Sauvegarde automatique
           </label>
         </div>
@@ -159,10 +126,10 @@ const fontSizes = [
         <div class="setting-item">
           <label>
             <input
-                type="checkbox"
-                :checked="settings.notifications.email"
-                @change="updateSetting('notifications.email', $event.target.checked)"
-            >
+              type="checkbox"
+              :checked="settings.notifications.email"
+              @change="updateSetting('notifications.email', $event.target.checked)"
+            />
             Notifications par email
           </label>
         </div>
@@ -170,10 +137,10 @@ const fontSizes = [
         <div class="setting-item">
           <label>
             <input
-                type="checkbox"
-                :checked="settings.notifications.push"
-                @change="updateSetting('notifications.push', $event.target.checked)"
-            >
+              type="checkbox"
+              :checked="settings.notifications.push"
+              @change="updateSetting('notifications.push', $event.target.checked)"
+            />
             Notifications push
           </label>
         </div>
@@ -181,10 +148,10 @@ const fontSizes = [
         <div class="setting-item">
           <label>
             <input
-                type="checkbox"
-                :checked="settings.notifications.sound"
-                @change="updateSetting('notifications.sound', $event.target.checked)"
-            >
+              type="checkbox"
+              :checked="settings.notifications.sound"
+              @change="updateSetting('notifications.sound', $event.target.checked)"
+            />
             Sons de notification
           </label>
         </div>
@@ -197,10 +164,10 @@ const fontSizes = [
         <div class="setting-item">
           <label>
             <input
-                type="checkbox"
-                :checked="settings.twoFactorAuth"
-                @change="updateSetting('twoFactorAuth', $event.target.checked)"
-            >
+              type="checkbox"
+              :checked="settings.twoFactorAuth"
+              @change="updateSetting('twoFactorAuth', $event.target.checked)"
+            />
             Authentification à deux facteurs
           </label>
         </div>
@@ -208,10 +175,10 @@ const fontSizes = [
         <div class="setting-item">
           <label>
             <input
-                type="checkbox"
-                :checked="settings.autoLogout"
-                @change="updateSetting('autoLogout', $event.target.checked)"
-            >
+              type="checkbox"
+              :checked="settings.autoLogout"
+              @change="updateSetting('autoLogout', $event.target.checked)"
+            />
             Déconnexion automatique
           </label>
         </div>
@@ -219,21 +186,19 @@ const fontSizes = [
         <div class="setting-item" v-if="settings.autoLogout">
           <label>Délai de session (minutes)</label>
           <input
-              type="number"
-              min="5"
-              max="120"
-              :value="settings.sessionTimeout"
-              @input="updateSetting('sessionTimeout', parseInt($event.target.value))"
-          >
+            type="number"
+            min="5"
+            max="120"
+            :value="settings.sessionTimeout"
+            @input="updateSetting('sessionTimeout', parseInt($event.target.value))"
+          />
         </div>
       </section>
 
       <!-- Actions -->
       <section class="settings-section">
         <div class="setting-actions">
-          <button @click="resetSettings" class="reset-btn">
-            Réinitialiser les paramètres
-          </button>
+          <button @click="resetSettings" class="reset-btn">Réinitialiser les paramètres</button>
         </div>
       </section>
     </div>
@@ -254,7 +219,8 @@ const fontSizes = [
   padding: 2rem;
 }
 
-.loading, .error {
+.loading,
+.error {
   text-align: center;
   padding: 1rem;
   margin: 1rem 0;
@@ -295,15 +261,15 @@ const fontSizes = [
 }
 
 .setting-item select,
-.setting-item input[type="number"],
-.setting-item input[type="range"] {
+.setting-item input[type='number'],
+.setting-item input[type='range'] {
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
   min-width: 150px;
 }
 
-.setting-item input[type="checkbox"] {
+.setting-item input[type='checkbox'] {
   margin-right: 0.5rem;
 }
 

@@ -1,6 +1,7 @@
 const mysql = require('mysql2')
 const databaseConfig = require('./configDatabase.json')
 
+
 class Database {
     constructor() {
 
@@ -17,6 +18,23 @@ class Database {
     disconnect(mysqlConnection){
         mysqlConnection.destroy()
     }
+
+    /**
+     * Convert JavaScript Date or ISO string to MySQL DATETIME format
+     * @param {Date|string} date - Date object or ISO string
+     * @returns {string} MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
+     */
+    formatDateForMySQL(date) {
+        const d = new Date(date);
+        return d.toISOString().slice(0, 19).replace('T', ' ');
+    }
 }
 
 exports.Database = Database
+
+/*
+
+
+
+
+ */

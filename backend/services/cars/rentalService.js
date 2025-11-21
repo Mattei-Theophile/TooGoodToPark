@@ -1,4 +1,4 @@
-const database = require("../../database/database");
+const {Database} = require("../../database/database");
 
 /**
  * Get current renter information for a specific car
@@ -9,8 +9,10 @@ async function getRenter(req, res) {
     try {
         const { id } = req.params;
 
+        const database = new Database();
+        const conn = database.connect();
         // Validate car exists
-        const [carExists] = await database.query(
+        const [carExists] = await conn.promise().query(
             'SELECT ID_Car, Name_Car, Marque_Car, Modele_Car FROM Car WHERE ID_Car = ?',
             [id]
         );
@@ -23,7 +25,7 @@ async function getRenter(req, res) {
         }
 
         // Get current active rental information
-        const [activeRental] = await database.query(`
+        const [activeRental] = await conn.promise().query(`
             SELECT 
                 ar.ID_Active_Rental,
                 ar.Start_Date,
@@ -147,7 +149,7 @@ async function createRental(req, res) {
         } = req.body;
         const clientId = req.user.id;
         const userRole = req.user.role;
-
+        console.log(req.params);
         // Validation
         if (!reservationId) {
             return res.status(400).json({
@@ -155,9 +157,10 @@ async function createRental(req, res) {
                 message: 'Reservation ID is required'
             });
         }
-
+        const database = new Database();
+        const conn = database.connect();
         // Get reservation details and validate
-        const [reservation] = await database.query(`
+        const [reservation] = await conn.query(`
             SELECT 
                 r.ID_Reservation,
                 r.ID_Client,
@@ -202,7 +205,7 @@ async function createRental(req, res) {
         }
 
         // Check if rental already exists for this reservation
-        const [existingRental] = await database.query(
+        const [existingRental] = await conn.promise().query(
             'SELECT ID_Active_Rental FROM Active_Rentals WHERE ID_Reservation = ?',
             [reservationId]
         );
@@ -226,7 +229,7 @@ async function createRental(req, res) {
         }
 
         // Create active rental
-        const [result] = await database.query(`
+        const [result] = await conn.promise().query(`
             INSERT INTO Active_Rentals (
                 ID_Reservation, 
                 ID_Car, 
@@ -256,13 +259,13 @@ async function createRental(req, res) {
         ]);
 
         // Update reservation status to active
-        await database.query(
+        await conn.promise().query(
             'UPDATE reservations SET Status = ? WHERE ID_Reservation = ?',
             ['active', reservationId]
         );
 
         // Update car availability to rented
-        await database.query(`
+        await conn.promise().query(`
             UPDATE Car_Availability 
             SET Status = 'rented' 
             WHERE ID_Car = ? 
@@ -271,7 +274,7 @@ async function createRental(req, res) {
         `, [id, reservationData.Date_End_Reservation, reservationData.Date_Start_Reservation]);
 
         // Get created rental with full details
-        const [newRental] = await database.query(`
+        const [newRental] = await conn.promise().query(`
             SELECT 
                 ar.*,
                 c.Nom_Client,
@@ -357,8 +360,10 @@ async function updateRental(req, res) {
             });
         }
 
+        const database = new Database();
+        const conn = database.connect();
         // Get existing rental
-        const [existingRental] = await database.query(`
+        const [existingRental] = await conn.promise().query(`
             SELECT 
                 ar.*,
                 c.ID_Seller,
@@ -456,7 +461,7 @@ async function updateRental(req, res) {
         updateValues.push(rentalId);
 
         // Update rental
-        await database.query(
+        await conn.promise().query(
             `UPDATE Active_Rentals SET ${updateFields.join(', ')} WHERE ID_Active_Rental = ?`,
             updateValues
         );
@@ -464,13 +469,13 @@ async function updateRental(req, res) {
         // Handle status-specific actions
         if (status === 'returning') {
             // Optionally create a return record or update reservation
-            await database.query(
+            await conn.promise().query(
                 'UPDATE reservations SET Status = ? WHERE ID_Reservation = ?',
                 ['completed', rental.ID_Reservation]
             );
 
             // Update car availability back to available
-            await database.query(`
+            await conn.promise().query(`
                 UPDATE Car_Availability 
                 SET Status = 'available' 
                 WHERE ID_Car = ? 
@@ -480,7 +485,7 @@ async function updateRental(req, res) {
         }
 
         // Get updated rental
-        const [updatedRental] = await database.query(`
+        const [updatedRental] = await conn.promise().query(`
             SELECT 
                 ar.*,
                 c.Nom_Client,
@@ -560,8 +565,10 @@ async function deleteRental(req, res) {
             });
         }
 
+        const database = new Database();
+        const conn = database.connect();
         // Get rental details
-        const [existingRental] = await database.query(`
+        const [existingRental] = await conn.promise().query(`
             SELECT 
                 ar.*,
                 c.ID_Seller,
@@ -600,26 +607,26 @@ async function deleteRental(req, res) {
 
         // Update final details before completion
         if (finalMileage) {
-            await database.query(
+            await conn.promise().query(
                 'UPDATE Active_Rentals SET Current_Mileage = ? WHERE ID_Active_Rental = ?',
                 [finalMileage, rentalId]
             );
         }
 
         // Update reservation to completed
-        await database.query(
+        await conn.promise().query(
             'UPDATE reservations SET Status = ? WHERE ID_Reservation = ?',
             ['completed', rental.ID_Reservation]
         );
 
         // Release security deposit (assuming no damages)
-        await database.query(
+        await conn.promise().query(
             'UPDATE Active_Rentals SET Security_Deposit_Status = ? WHERE ID_Active_Rental = ?',
             ['released', rentalId]
         );
 
         // Create transaction record for completed rental
-        await database.query(`
+        await conn.promise().query(`
             INSERT INTO Transaction 
             (Name_Transaction, Description_Transaction, Prix_Transaction, ID_Acheteur, ID_Vendeur) 
             VALUES (?, ?, ?, ?, ?)
@@ -632,7 +639,7 @@ async function deleteRental(req, res) {
         ]);
 
         // Update car availability back to available
-        await database.query(`
+        await conn.promise().query(`
             UPDATE Car_Availability 
             SET Status = 'available' 
             WHERE ID_Car = ? 
@@ -641,7 +648,7 @@ async function deleteRental(req, res) {
         `, [id, rental.End_Date, rental.Start_Date]);
 
         // Remove from active rentals
-        await database.query('DELETE FROM Active_Rentals WHERE ID_Active_Rental = ?', [rentalId]);
+        await conn.promise().query('DELETE FROM Active_Rentals WHERE ID_Active_Rental = ?', [rentalId]);
 
         res.status(200).json({
             success: true,
@@ -670,3 +677,318 @@ module.exports = {
     updateRental,
     deleteRental
 };
+
+/**
+ * @swagger
+ * /cars/{carId}/renter:
+ *   get:
+ *     summary: Get current renter information for a car
+ *     tags: [Rentals]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *     responses:
+ *       200:
+ *         description: Current renter information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     renter:
+ *                       $ref: '#/components/schemas/User'
+ *                     rental:
+ *                       type: object
+ *                       properties:
+ *                         ID_Rental:
+ *                           type: integer
+ *                         startDate:
+ *                           type: string
+ *                           format: date-time
+ *                         endDate:
+ *                           type: string
+ *                           format: date-time
+ *                         status:
+ *                           type: string
+ *                           enum: [active, completed, cancelled]
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Can only view renter info for owned cars
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Car not found or not currently rented
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
+ * /cars/{carId}/rental:
+ *   post:
+ *     summary: Start a rental for a car
+ *     tags: [Rentals]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [startDate, endDate]
+ *             properties:
+ *               startDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Rental start date and time
+ *                 example: "2024-12-01T10:00:00Z"
+ *               endDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: Rental end date and time
+ *                 example: "2024-12-05T18:00:00Z"
+ *               pickupLocation:
+ *                 type: string
+ *                 description: Pickup location
+ *               dropoffLocation:
+ *                 type: string
+ *                 description: Drop-off location (if different from pickup)
+ *     responses:
+ *       201:
+ *         description: Rental started successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Rental started successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     rentalId:
+ *                       type: integer
+ *                     startDate:
+ *                       type: string
+ *                       format: date-time
+ *                     endDate:
+ *                       type: string
+ *                       format: date-time
+ *                     totalCost:
+ *                       type: number
+ *                       description: Total rental cost
+ *       400:
+ *         description: Invalid rental data or car unavailable
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Car not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       409:
+ *         description: Car is already rented or not available
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   put:
+ *     summary: Update an active rental
+ *     tags: [Rentals]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [rentalId]
+ *             properties:
+ *               rentalId:
+ *                 type: integer
+ *                 description: Rental ID to update
+ *               endDate:
+ *                 type: string
+ *                 format: date-time
+ *                 description: New end date (extension)
+ *               dropoffLocation:
+ *                 type: string
+ *                 description: Updated drop-off location
+ *               notes:
+ *                 type: string
+ *                 description: Additional notes
+ *     responses:
+ *       200:
+ *         description: Rental updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Rental updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     additionalCost:
+ *                       type: number
+ *                       description: Additional cost for extension
+ *       400:
+ *         description: Invalid update data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Can only update own rentals
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Rental not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   delete:
+ *     summary: End/cancel a rental
+ *     tags: [Rentals]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [rentalId]
+ *             properties:
+ *               rentalId:
+ *                 type: integer
+ *                 description: Rental ID to end
+ *               reason:
+ *                 type: string
+ *                 enum: [completed, cancelled, early_return]
+ *                 description: Reason for ending rental
+ *                 default: completed
+ *               finalMileage:
+ *                 type: number
+ *                 description: Final car mileage reading
+ *               condition:
+ *                 type: string
+ *                 enum: [excellent, good, fair, poor, damaged]
+ *                 description: Car condition upon return
+ *                 default: good
+ *               notes:
+ *                 type: string
+ *                 description: Return notes
+ *     responses:
+ *       200:
+ *         description: Rental ended successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Rental ended successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     finalCost:
+ *                       type: number
+ *                       description: Final rental cost
+ *                     refund:
+ *                       type: number
+ *                       description: Refund amount (if early return)
+ *                     additionalCharges:
+ *                       type: number
+ *                       description: Additional charges (if any)
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Can only end own rentals
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Rental not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */

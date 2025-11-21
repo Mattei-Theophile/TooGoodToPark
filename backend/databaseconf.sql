@@ -117,7 +117,7 @@ Create Table Car (
                         Annee_Car SMALLINT NOT NULL,
                         Kilometrage_Car INT NOT NULL,
                         Description_Car TEXT,
-                        Prix_Car SMALLINT NOT NULL,
+                        Price_Car SMALLINT NOT NULL,
                         Date_Car DATE DEFAULT (CURRENT_DATE),
                         ID_Client BIGINT,
                         Created_At DATETIME DEFAULT CURRENT_TIMESTAMP,

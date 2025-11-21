@@ -3,7 +3,355 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs-extra');
 const database = require("../database/database");
+// Add these additional Swagger docs to your existing imageService.js
 
+/**
+ * @swagger
+ * /car/{carId}/images:
+ *   get:
+ *     summary: Get all images for a car
+ *     tags: [Car Images]
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *     responses:
+ *       200:
+ *         description: Car images retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/CarImage'
+ *       404:
+ *         description: Car not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   post:
+ *     summary: Upload images for a car
+ *     tags: [Car Images]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Image files (max 10, 5MB each)
+ *               imageType:
+ *                 type: string
+ *                 enum: [main, interior, exterior, engine, other]
+ *                 default: other
+ *               description:
+ *                 type: string
+ *                 description: Image description
+ *               displayOrder:
+ *                 type: integer
+ *                 description: Display order
+ *     responses:
+ *       201:
+ *         description: Images uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "3 images uploaded successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/CarImage'
+ *       400:
+ *         description: No images uploaded or invalid file type
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Can only upload images for own cars
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Car not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
+ * /car/{carId}/images/base64:
+ *   post:
+ *     summary: Upload car images as base64
+ *     tags: [Car Images]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [images]
+ *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   description: Base64 encoded image data
+ *                   example: "data:image/png;base64,iVBORw0KGgoAAA..."
+ *               imageType:
+ *                 type: string
+ *                 enum: [main, interior, exterior, engine, other]
+ *                 default: other
+ *               description:
+ *                 type: string
+ *                 description: Image description
+ *     responses:
+ *       201:
+ *         description: Base64 images uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *
+ * /car/{carId}/image/{imageId}:
+ *   get:
+ *     summary: Get specific car image details
+ *     tags: [Car Images]
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Image ID
+ *     responses:
+ *       200:
+ *         description: Car image details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/CarImage'
+ *       404:
+ *         description: Car or image not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   put:
+ *     summary: Update car image details
+ *     tags: [Car Images]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Image ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               description:
+ *                 type: string
+ *                 description: Image description
+ *               type:
+ *                 type: string
+ *                 enum: [main, interior, exterior, engine, other]
+ *                 description: Image type
+ *               displayOrder:
+ *                 type: integer
+ *                 description: Display order
+ *               isPrimary:
+ *                 type: boolean
+ *                 description: Set as primary image
+ *               altText:
+ *                 type: string
+ *                 description: Alt text for accessibility
+ *     responses:
+ *       200:
+ *         description: Image updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: No fields to update
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Can only update images from own cars
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *   delete:
+ *     summary: Delete car image
+ *     tags: [Car Images]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Image ID
+ *     responses:
+ *       200:
+ *         description: Image deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Can only delete images from own cars
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Car or image not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *
+ * /car/{carId}/image/{imageId}/file:
+ *   get:
+ *     summary: Get car image file (binary)
+ *     tags: [Car Images]
+ *     parameters:
+ *       - in: path
+ *         name: carId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Car ID
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Image ID
+ *       - in: query
+ *         name: size
+ *         schema:
+ *           type: string
+ *           enum: [thumbnail, medium, large, original]
+ *           default: original
+ *         description: Image size variant
+ *     responses:
+ *       200:
+ *         description: Image file
+ *         content:
+ *           image/jpeg:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/png:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/webp:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Car or image not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 // Create uploads directory if it doesn't exist
 const uploadDir = path.join(__dirname, '../../../uploads/cars');
 fs.ensureDirSync(uploadDir);

@@ -8,16 +8,16 @@
     "backend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:backend": "npm run start --workspace=backend",
     "build": "npm run build --workspace=frontend",
     "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=backend"
   },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
-  },
   "dependencies": {
-    "rollup": "^4.52.3"
+    "rollup": "^4.52.3",
+    "v-calendar": "^3.1.2"
+  },
+  "devDependencies": {
+    "eslint-config-prettier": "^10.1.8"
   }
 }

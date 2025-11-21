@@ -9,16 +9,16 @@ module.exports = {
     createRental:{
         method: 'post',
         route: '/cars/:id/rental',
-        action: [auth.authenticateToken, rental.createRental]
+        action: [auth.authenticateTokenWithRefresh, rental.createRental]
     },
     updateRental:{
         method: 'put',
         route: '/cars/:id/rental',
-        action: [auth.authenticateToken, rental.updateRental]
+        action: [auth.authenticateTokenWithRefresh, rental.updateRental]
     },
     deleteRental:{
         method: 'delete',
         route: '/cars/:id/rental',
-        action: [auth.authenticateToken, rental.deleteRental]
+        action: [auth.authenticateTokenWithRefresh, rental.deleteRental]
     }
 }

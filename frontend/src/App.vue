@@ -2,7 +2,7 @@
 import Header from "@/components/core/Header.vue";
 import Footer from "@/components/core/Footer.vue";
 import CookieBanner from "@/components/core/cookies/cookie-banner.vue";
-
+import 'v-calendar/style.css';
 // Handle cookie consent
 const handleCookieConsent = (consent) => {
   console.log('Cookie consent given:', consent);

@@ -12,14 +12,31 @@ The verbs map to CRUD operations
     DELETE removes data.
  */
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Authentication
+ *     description: User authentication and authorization endpoints
+ *   - name: Cars
+ *     description: Car management and rental endpoints
+ *   - name: Reservations
+ *     description: Reservation management endpoints
+ *   - name: Reviews
+ *     description: Car review and rating endpoints
+ *   - name: Profile
+ *     description: User profile management endpoints
+ *   - name: Settings
+ *     description: User settings and preferences endpoints
+ */
 class Api {
     constructor(app) {
         this.app = app;
         this.routes = express.Router()
+        this.loadsRoute()
     }
 
     async start() {
-        this.loadsRoute()
+
     }
 
     loadsRoute() {
@@ -30,7 +47,7 @@ class Api {
 
             // Iterate through HTTP methods (get, post, etc.)
             for (const name in routeModule) {
-
+                routeModule[name]
                 if (routeModule[name] && routeModule[name].method && routeModule[name].route && routeModule[name].action) {
                     const {method, route, action} = routeModule[name];
                     const methodLower = method.toLowerCase();
@@ -68,5 +85,7 @@ class Api {
         this.app.use('/api', this.routes)
     }
 }
+
+Api.router = express.Router()
 
 module.exports = {Api};

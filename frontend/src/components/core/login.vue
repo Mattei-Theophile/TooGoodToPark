@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import {reactive, ref} from 'vue'
-import {useRouter} from 'vue-router'
+import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/UserStore'
+
+const userStore = useUserStore()
 
 // Simple reactive form model
 const form = reactive({
@@ -10,9 +13,6 @@ const form = reactive({
 
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
-
-// Optional: read base URL from Vite env (fallback to same-origin)
-const API_BASE = 'http://localhost:3000'
 
 const router = useRouter()
 
@@ -27,88 +27,68 @@ async function onSubmit() {
 
   loading.value = true
   try {
-
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // Adjust payload key names to match your backend contract
-      body: JSON.stringify({
-        email: form.email,
-        password: form.password,
-      }),
-      credentials: 'include', // remove if you don't use cookies
+    const credentials = JSON.stringify({
+      email: form.email,
+      password: form.password,
     })
 
-    if (!res.ok) {
+    const res = await userStore.login(credentials)
+
+    if (!res.success) {
       // Try to read error details from backend
       let details = ''
       try {
-        const data = await res.json()
-        details = data?.message || data?.error || ''
+        details = res?.message || ''
       } catch {
         // ignore parse errors
       }
-      throw new Error(details || `Login failed (${res.status})`)
-    }
-
-    const data = await res.json()
-    console.log(data)
-    // If backend returns a token, store it (adapt to your needs)
-    if (data?.accessToken) {
-      console.log("token", data.accessToken)
-      localStorage.setItem('auth_token', data.accessToken)
+      throw new Error(details || `Login failed (${res?.status})`)
     }
 
     // Navigate after login (adjust route as needed)
     await router.push('/account')
 
-    console.log("redirecting to user");
+    console.log('redirecting to user')
   } catch (err: any) {
     errorMessage.value = err?.message || 'Unexpected error. Please try again.'
   } finally {
     loading.value = false
   }
 }
-
-
 </script>
 
 <template>
   <div class="LoggingMenu">
     <div class="connexion">
       <form class="login-form" @submit.prevent="onSubmit">
-
         <div class="user">
           <label for="email-login">Email </label>
           <input
-              type="text"
-              id="email-login"
-              name="email"
-              class="information"
-              placeholder="Adresse mail"
-              v-model="form.email"
-              :disabled="loading"
-              required
+            type="text"
+            id="email-login"
+            name="email"
+            class="information"
+            placeholder="Adresse mail"
+            v-model="form.email"
+            :disabled="loading"
+            required
           />
         </div>
 
         <div class="password">
           <label for="password-login">Password:</label>
           <input
-              type="password"
-              id="password-login"
-              name="password"
-              class="information"
-              placeholder="password"
-              minlength="8"
-              v-model="form.password"
-              :disabled="loading"
-              required
+            type="password"
+            id="password-login"
+            name="password"
+            class="information"
+            placeholder="password"
+            minlength="8"
+            v-model="form.password"
+            :disabled="loading"
+            required
           />
         </div>
-
 
         <button class="button" type="submit" :disabled="loading">
           {{ loading ? 'Logging in…' : 'Login' }}
@@ -118,7 +98,6 @@ async function onSubmit() {
       </form>
     </div>
   </div>
-
 </template>
 
 <style scoped>
@@ -132,7 +111,6 @@ async function onSubmit() {
   color: var(--danger-color, #c0392b);
   margin-top: 0.5rem;
 }
-
 
 .LoggingMenu {
   max-width: 500px;
@@ -169,14 +147,15 @@ async function onSubmit() {
   width: 100%;
   min-height: 2rem;
   padding: 1em;
-  border: 1px solid #D9D9D9;
+  border: 1px solid #d9d9d9;
   border-radius: 8px;
-  background-color: #FFFFFF;
+  background-color: #ffffff;
   color: #767676;
   box-sizing: border-box;
 }
 
-.user, .password {
+.user,
+.password {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -184,16 +163,17 @@ async function onSubmit() {
   width: 100%;
 }
 
-.user label, .password label {
+.user label,
+.password label {
   font-weight: 500;
   color: #333;
 }
 
-.logging{
+.logging {
   padding-top: 2rem;
   border-radius: 8px;
   background-color: #222539;
-  color: #F5F5F5;
+  color: #f5f5f5;
 }
 
 .forgot_password {
@@ -203,20 +183,20 @@ async function onSubmit() {
   margin-top: 0.5rem;
 }
 
-.button{
+.button {
   border-radius: 0.5rem;
   height: 2.5rem;
   width: 100%;
   margin-top: 1.5rem;
-  color: #F5F5F5;
-  background-color: #09091A;
+  color: #f5f5f5;
+  background-color: #09091a;
   border: none;
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
-.button:hover{
+.button:hover {
   background-color: #1a1a2e;
 }
 
@@ -228,7 +208,7 @@ async function onSubmit() {
 }
 
 .signup-link a {
-  color: #09091A;
+  color: #09091a;
   text-decoration: underline;
   font-weight: bold;
 }
@@ -236,8 +216,6 @@ async function onSubmit() {
 .signup-link a:hover {
   color: #1a1a2e;
 }
-
-
 
 /* Responsive styles */
 @media screen and (max-width: 768px) {
