@@ -1,123 +1,133 @@
-import {createRouter, createWebHistory} from "vue-router";
-import {isLoggedIn} from "@/services/Auth/auth.js";
-
-import Auth from "@/pages/Auth.vue";
-import Home from "@/pages/client/Home.vue";
-import Account from "@/pages/Account.vue";
-import Settings from "@/pages/Settings.vue";
-import Announce from "@/pages/client/Announce.vue";
-import History from "@/pages/client/History.vue";
-import Login from "@/components/core/login.vue";
-import Register from "@/components/core/register.vue";
-import Search from "@/pages/client/Search.vue";
-import Car from "@/pages/Car.vue";
-import Reserve from "@/pages/Reserve.vue";
+import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/UserStore.js'
 
 const routes = [
-    {
-        path:'/',
-        name:'Home',
-        component:Home,
-        meta:{
-            requireAuth:false,
-        }
+  {
+    path: '/',
+    name: 'Home',
+    component: () => import('@/views/client/Home.vue'),
+    meta: {
+      requireAuth: false,
+      showSidebar: false, // Public: No sidebar
+      showHeader: true, // Public: Show header
     },
-    {
-        path:'/announce/',
-        name:'Announce',
-        component:Announce,
-        meta:{
-            requireAuth:false,
-        }
+  },
+  {
+    path: '/announce/:id',
+    name: 'Announce',
+    component: () => import('@/views/client/Announce.vue'),
+    meta: {
+      requireAuth: false,
+      showSidebar: false,
+      showHeader: true,
     },
-    {
-        path:'/history',
-        name:'History',
-        component:History,
-        meta:{
-            requireAuth:true,
-        }
+    props: true,
+  },
+  {
+    path: '/reservation',
+    name: 'Reservation',
+    component: () => import('@/views/Reserve.vue'),
+    meta: {
+      requireAuth: true,
+      showSidebar: false,
+      showHeader: true,
     },
-    {
-      path:"/car/:id",
-      name:'Car',
-      component:Car,
-      meta:{
-        requireAuth:false,
+    props: true,
+  },
+  {
+    path: '/search',
+    name: 'Search',
+    component: () => import('@/views/client/Search.vue'),
+    meta: {
+      requireAuth: false,
+      showSidebar: false,
+      showHeader: true,
+    },
+    props: true,
+  },
+  {
+    path: '/login',
+    name: 'Auth',
+    component: () => import('@/views/authentification/Auth.vue'),
+    meta: {
+      requireAuth: false,
+      showSidebar: false,
+      showHeader: true,
+    },
+    children: [
+      {
+        path: '/',
+        redirect: '/login',
       },
-      props:true
-    },
-    {
-      path:"/reserve/:dday-:dreturn",
-      name:'Reserve',
-      component:Reserve,
-      meta:{
-        requireAuth:true,
+      {
+        path: '/login',
+        name: 'Login',
+        component: () => import('@/components/core/authentification/Login.vue'),
       },
-      props:true
-    },
-    {
-      path:"/search",
-      name:'Search',
-      component:Search,
-      meta:{
-          requireAuth:false,
+      {
+        path: '/register',
+        name: 'Register',
+        component: () => import('@/components/core/authentification/Register.vue'),
       },
-      props: true
+    ],
+  },
+  {
+    path: '/account',
+    name: 'Account',
+    component: () => import('@/views/user/Account.vue'),
+    meta: {
+      requireAuth: true,
+      showSidebar: true,
+      showHeader: false,
     },
-    {
-      path:'/connect',
-      name:'Auth',
-      component:Auth,
-      meta:{
-            requireAuth:false,
+    children: [
+      {
+        path: '',
+        name: 'MainAccount',
+        component: () => import('@/views/user/feature/MainAccount.vue'),
       },
-      children: [
-            {
-                path: '/',
-                redirect:'/login'
-            },
-            {
-                path:'/login',
-                name: 'Login',
-                component: Login
-            },
-            {
-                path:'/register',
-                name: 'Register',
-                component: Register
-            }
-            ]
-    },
-    {
-        path:'/account',
-        name:'Account',
-        component:Account,
-        meta:{
-            requireAuth:true,
-        }
-    },
-    {
-        path:'/settings',
-        name:'Settings',
-        component:Settings,
-        meta:{
-            requireAuth:true,
-        }
-    }
+      {
+        path: 'reservations',
+        name: 'ReservationsAccount',
+        component: () => import('@/views/user/feature/ReservationAccount.vue'),
+      },
+      {
+        path: 'cars',
+        name: 'CarsAccount',
+        component: () => import('@/views/user/feature/CarAccount.vue'),
+      },
+      {
+        path: 'cars/add',
+        name: 'NewCarAccount',
+        component: () => import('@/views/user/feature/AddCar.vue'),
+      },
+      {
+        path: 'cars/edit/:carID',
+        name: 'EditCarAccount',
+        component: () => import('@/views/user/feature/EditCar.vue'),
+        props: true,
+      },
+      {
+        path: 'settings',
+        name: 'SettingsAccount',
+        component: () => import('@/views/user/feature/SettingsAccount.vue'),
+      },
+    ],
+  },
 ]
 
 const router = createRouter({
-    history:createWebHistory(),
-    routes
+  history: createWebHistory(),
+  routes,
 })
 
 router.beforeEach((to, from, next) => {
-    if (to.meta.requireAuth && !isLoggedIn()) {
-        console.log("The user is not logged in");
-        next('/login') // Redirect to login page
-    } else {
-        next() // Allow navigation
-    }
+  if (to.meta.requireAuth && !useUserStore().isLoggedIn()) {
+    console.log('The user is not logged in')
+    next('/login')
+  } else {
+    next()
+  }
 })
-export default router;
+
+export default router

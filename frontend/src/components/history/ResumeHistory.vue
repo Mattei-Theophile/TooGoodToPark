@@ -1,76 +1,139 @@
-<script setup>
+<script setup lang="ts">
+import ReservationInfo from '@/components/car/reservationInfo.vue'
+import { computed, onMounted, ref } from 'vue'
+import { useUserStore } from '@/stores/UserStore.js'
+import { Reservations } from '@/services/reservations.js'
 
-import CarSmallInfo from "@/components/car/carSmallInfo.vue";
-
-import {useApi} from '@/services/api/useApi.js'
-import {onBeforeMount, ref} from "vue";
-import {isLoggedIn} from "@/services/Auth/auth.js";
-const {loading, error, get} = useApi()
-
-const history = ref(null);
-
-onBeforeMount(() => {
-  if(isLoggedIn()){
-    fetchHistory()
-  } else {
-    console.log("not logged in")
-  }
+const props = defineProps({
+  defaultLimitShow: {
+    type: Number,
+    default: 3,
+  },
 })
 
-const fetchHistory = async () => {
+const userStore = useUserStore()
+const reservationService = ref(new Reservations())
+const isLoading = ref(true)
+const limitShow = ref(props.defaultLimitShow)
+
+const isExpanded = computed(() => {
+  return limitShow.value >= reservationService.value.centralizedReservations.length
+})
+
+const loadReservations = async () => {
+  isLoading.value = true
   try {
-    history.value = await get(`http://localhost:3000/api/cars/myreservations`,{
-      query:{
-        limit:3
-      }
-    });
-    console.log(history.value);
-  }catch (error) {
-    console.log(error);
+    await reservationService.value.fetchMyReservation()
+  } catch (error) {
+    console.error('Failed to load reservations:', error)
+  } finally {
+    isLoading.value = false
   }
 }
 
+const reservationToShow = computed(() => {
+  if (!reservationService.value.centralizedReservations) return []
+  return reservationService.value.centralizedReservations.slice(0, limitShow.value)
+})
+
+const handleToggleHistory = () => {
+  if (isExpanded.value) {
+    limitShow.value = props.defaultLimitShow
+  } else {
+    limitShow.value = reservationService.value.centralizedReservations.length
+  }
+}
+
+onMounted(() => {
+  if (userStore.isLoggedIn()) {
+    loadReservations()
+  } else {
+    isLoading.value = false
+  }
+})
 </script>
 
 <template>
+  <div class="d-flex flex-column fill-height">
+    <div v-if="isLoading" class="d-flex justify-center align-center py-8">
+      <v-progress-circular indeterminate color="#216c37" size="64" width="6"></v-progress-circular>
+    </div>
 
-  <div v-if="!isLoggedIn()">
-    <p>You must be logged in to see your history</p>
-    <button>
-      <router-link to="/login">Log in !</router-link>
-    </button>
-  </div>
-  <div v-else>
-    <div v-if="loading">Loading...</div>
-    <div v-else-if="error"> Error : {{error}}</div>
-    <div v-else>
-      <car-small-info v-for="reservation in history.data.reservations" :car="reservation.car" :startDate="reservation.startDate" :endDate="reservation.endDate"/>
+    <div v-else class="d-flex flex-column ga-4">
+      <v-sheet
+        v-if="!userStore.isLoggedIn()"
+        class="d-flex flex-column align-center justify-center pa-6 text-center"
+        rounded="lg"
+        border="dashed"
+      >
+        <v-icon icon="mdi-lock" size="48" color="grey-lighten-1" class="mb-2"></v-icon>
+        <p class="text-body-1 mb-4 text-medium-emphasis">
+          Please log in to view your reservation history.
+        </p>
+        <v-btn
+          to="/login"
+          color="#216c37"
+          theme="dark"
+          prepend-icon="mdi-login"
+          width="100%"
+          max-width="300"
+        >
+          Log in
+        </v-btn>
+      </v-sheet>
 
-      <router-link to="/history" class="see-all-history">
-        See all history
-      </router-link>
+      <v-sheet
+        v-else-if="reservationService.centralizedReservations.length === 0"
+        class="d-flex flex-column align-center justify-center pa-8 text-center"
+        rounded="lg"
+        border="dashed"
+        color="grey-lighten-5"
+      >
+        <v-icon icon="mdi-car-key" size="54" color="grey" class="mb-3"></v-icon>
 
+        <h3 class="text-h6 font-weight-bold text-grey-darken-2">No trips yet</h3>
+
+        <p class="text-body-2 mb-6 text-medium-emphasis" style="max-width: 250px">
+          Ready to hit the road? Find the perfect car for your next adventure.
+        </p>
+
+        <v-btn
+          to="/search"
+          color="#216c37"
+          theme="dark"
+          prepend-icon="mdi-magnify"
+          elevation="2"
+          width="100%"
+          max-width="250"
+        >
+          Rent a car
+        </v-btn>
+      </v-sheet>
+
+      <div v-else class="d-flex flex-column ga-4">
+        <v-slide-y-transition group>
+          <reservation-info
+            v-for="(reservation, index) in reservationToShow"
+            :key="reservation.id || index"
+            :reservation="reservation"
+          />
+        </v-slide-y-transition>
+
+        <v-btn
+          v-if="reservationService.centralizedReservations.length > props.defaultLimitShow"
+          @click="handleToggleHistory"
+          color="#216c37"
+          theme="dark"
+          size="large"
+          class="text-none mt-2 align-self-center"
+          width="80%"
+          rounded="lg"
+          elevation="2"
+          :prepend-icon="isExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+        >
+          {{ isExpanded ? 'Show less' : 'See all history' }}
+        </v-btn>
+      </div>
     </div>
   </div>
-
-
-
-
 </template>
-
-<style scoped>
-
-
-.see-all-history{
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color:#000000;
-  border-radius: 10px;
-  padding: 0.5rem 5rem;
-  color:#FFFFFF;
-  font-size: 1.2rem;
-
-
-}
-</style>

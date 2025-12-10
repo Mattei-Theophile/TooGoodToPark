@@ -5,22 +5,22 @@ module.exports = {
     getUserSettings: {
         method: 'get',
         route: '/account/settings',
-        action: [auth.authenticateToken, settings.getSettingsById]
+        action: [auth.authenticateTokenWithRefresh, settings.getSettingsById]
     },
     createUserSettings: {
         method: 'post',
         route: '/account/settings',
-        action: [auth.authenticateToken, settings.createSettings]
+        action: [auth.authenticateTokenWithRefresh, settings.createSettings]
     },
     updateUserSettings: {
         method: 'put',
         route: '/account/settings',
-        action: [auth.authenticateToken, settings.updateSettings]
+        action: [auth.authenticateTokenWithRefresh, settings.updateSettings]
     },
     deleteUserSettings: {
         method: 'delete',
         route: '/account/settings',
-        action: [auth.authenticateToken, settings.deleteSettings]
+        action: [auth.authenticateTokenWithRefresh, settings.deleteSettings]
     }
 
 }
