@@ -43,8 +43,8 @@ export class Reservation {
   async create() {
     const reservation = {
       ID_Car: this.car.id,
-      startDate: this.start,
-      endDate: this.end,
+      startDate: this.start.toLocaleDateString().replace(/\//g, '-'),
+      endDate: this.end.toLocaleDateString().replace(/\//g, '-'),
     }
     console.log(reservation)
     try {
@@ -59,8 +59,8 @@ export class Reservation {
     const reservation = {
       reservationId: this.id,
       ID_Car: this.car.id,
-      startDate: this.start,
-      endDate: this.end,
+      startDate: this.start.toLocaleDateString().replace(/\//g, '-'),
+      endDate: this.end.toLocaleDateString().replace(/\//g, '-'),
       status: this.status,
     }
 

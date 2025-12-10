@@ -13,11 +13,6 @@
     "build": "npm run build --workspace=frontend",
     "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=backend"
   },
-  "dependencies": {
-    "rollup": "^4.52.3",
-    "v-calendar": "^3.1.2"
-  },
-  "devDependencies": {
-    "eslint-config-prettier": "^10.1.8"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }

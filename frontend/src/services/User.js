@@ -6,6 +6,12 @@ export class User {
   email = ''
   id = 0
   phone = ''
+  address = {
+    street: '',
+    city: '',
+    zipCode: '',
+    country: '',
+  }
   api = Api.useApi()
 
   constructor() {}
@@ -13,17 +19,24 @@ export class User {
   async fetchUserDetails() {
     try {
       const res = await this.api.get('http://localhost:3000/api/account/me', {})
-      this.firstName = res.user.prenom
-      this.lastName = res.user.nom
+      console.log(res)
+      this.firstName = res.user.name
+      this.lastName = res.user.surname
       this.email = res.user.email
       this.id = res.user.id
-      this.phone = res.user.numeroTelephone
+      this.phone = res.user.phonenumber
+      this.address = {
+        street: res.user.street,
+        city: res.user.city,
+        zipCode: res.user.zipcode,
+        country: res.user.country,
+      }
     } catch (error) {
       console.log(error)
     }
   }
 
-  async updateUser(user) {
+  async update(user) {
     try {
       const res = await this.api.put('http://localhost:3000/api/account/me', user)
       console.log(res)
@@ -32,7 +45,7 @@ export class User {
     }
   }
 
-  async deleteUser() {
+  async delete() {
     try {
       const res = await this.api.delete('http://localhost:3000/api/account/me')
     } catch (error) {

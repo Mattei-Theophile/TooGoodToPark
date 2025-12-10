@@ -1,154 +1,171 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { onClickOutside } from '@vueuse/core'
 
 const router = useRouter()
-const target = useTemplateRef<HTMLElement>('search-form')
-onClickOutside(target, (event) => {
-  research.value = false
-})
-
-let research = ref(false)
-let researchForm = ref({
+const research = ref(false)
+const researchForm = ref({
   city: '',
   startDate: '',
   endDate: '',
+  passenger: 1,
 })
+
+const handleSubmitForm = () => {
+  if (
+    researchForm.value.city &&
+    researchForm.value.startDate &&
+    researchForm.value.endDate &&
+    researchForm.value.passenger
+  ) {
+    router.push({
+      name: 'Search',
+      query: {
+        city: researchForm.value.city,
+        startDate: researchForm.value.startDate,
+        endDate: researchForm.value.endDate,
+        passenger: researchForm.value.passenger,
+      },
+    })
+    research.value = false
+  }
+}
 </script>
 
 <template>
-  <div class="search-bar">
-    <button @click="research = !research">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="32"
-        height="32"
-        class="bi bi-search"
-        viewBox="0 0 16 16"
-      >
-        <path
-          d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"
-        />
-      </svg>
-      Search for an ad
-    </button>
-  </div>
-
-  <div ref="search-form" class="search-form-container" v-if="research">
-    <h2 class="form-research-title">Search for an ad</h2>
-
-    <div class="city-form-research">
-      <label> CITY</label>
-      <input required type="text" v-model.lazy="researchForm.city" />
-    </div>
-
-    <div class="dates-form-research">
-      <label>DATES</label>
-      <div class="dates-selectors-form-research">
-        <div class="date-pickers-form-research">
-          <label> Departure </label>
-          <input required type="date" v-model.lazy="researchForm.startDate" />
-        </div>
-
-        <div class="date-pickers-form-research">
-          <label> Return</label>
-          <input required type="date" v-model.lazy="researchForm.endDate" />
-        </div>
-      </div>
-    </div>
-
-    <button
-      type="submit"
-      @click="
-        router.push({
-          name: 'Search',
-          query: {
-            city: researchForm.city,
-            startDate: researchForm.startDate,
-            endDate: researchForm.endDate,
-          },
-        })
-      "
+  <v-container class="search-bar">
+    <v-btn
+      height="48"
+      elevation="2"
+      class="font-weight-bold text-body-1"
+      rounded="pill"
+      @click="research = !research"
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="32"
-        height="32"
-        class="bi bi-search"
-        viewBox="0 0 16 16"
-      >
-        <path
-          d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"
-        />
-      </svg>
-      Start search
-    </button>
-  </div>
+      <v-icon size="32">mdi-magnify</v-icon>
+
+      <span class="d-none d-sm-inline ml-2"> Search </span>
+    </v-btn>
+  </v-container>
+
+  <v-bottom-sheet v-model="research">
+    <v-card color="#1b3f25" theme="dark" class="rounded-t-xl pb-6">
+      <v-card-title class="text-h5 font-weight-bold text-center py-6">
+        Search for an ad
+      </v-card-title>
+
+      <v-card-text>
+        <v-container>
+          <v-row justify="center">
+            <v-col cols="12" sm="6" md="4">
+              <div
+                class="text-subtitle-2 text-grey-lighten-1 mb-1 ml-1 text-uppercase font-weight-bold"
+              >
+                City
+              </div>
+              <v-text-field
+                v-model="researchForm.city"
+                placeholder="Paris"
+                variant="solo-filled"
+                bg-color="#327244"
+                flat
+                hide-details
+                rounded="lg"
+                prepend-inner-icon="mdi-map-marker"
+              ></v-text-field>
+            </v-col>
+
+            <v-col cols="12" sm="6" md="2">
+              <div
+                class="text-subtitle-2 text-grey-lighten-1 mb-1 ml-1 text-uppercase font-weight-bold"
+              >
+                Passenger
+              </div>
+              <v-text-field
+                v-model="researchForm.passenger"
+                type="number"
+                min="1"
+                max="10"
+                variant="solo-filled"
+                bg-color="#327244"
+                flat
+                hide-details
+                rounded="lg"
+                prepend-inner-icon="mdi-account"
+              ></v-text-field>
+            </v-col>
+
+            <v-col cols="12" md="5">
+              <div
+                class="text-subtitle-2 text-grey-lighten-1 mb-1 ml-1 text-uppercase font-weight-bold text-center"
+              >
+                Dates
+              </div>
+              <v-row dense>
+                <v-col cols="6">
+                  <v-text-field
+                    v-model="researchForm.startDate"
+                    label="Departure"
+                    type="date"
+                    variant="solo-filled"
+                    bg-color="#327244"
+                    flat
+                    hide-details
+                    rounded="lg"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="6">
+                  <v-text-field
+                    v-model="researchForm.endDate"
+                    label="Return"
+                    type="date"
+                    variant="solo-filled"
+                    bg-color="#327244"
+                    flat
+                    hide-details
+                    rounded="lg"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+            </v-col>
+          </v-row>
+
+          <v-row justify="center" class="mt-6">
+            <v-col cols="12" sm="6" md="4" class="d-flex justify-center">
+              <v-btn
+                color="white"
+                class="text-green-darken-4 font-weight-bold text-h6"
+                height="56"
+                width="100%"
+                rounded="xl"
+                prepend-icon="mdi-magnify"
+                @click="handleSubmitForm"
+              >
+                Start search
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-container>
+      </v-card-text>
+    </v-card>
+  </v-bottom-sheet>
 </template>
 
 <style scoped>
-.search-bar {
-  position: sticky;
-  bottom: 0;
-  margin-top: 2rem;
-
-  button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 5rem;
-    background-color: #216c37;
-    color: #ffffff;
-    fill: #ffffff;
-    border-radius: 10px;
-    font-size: 1.25rem;
-    font-weight: 600;
-
-    svg {
-      padding-right: 1rem;
-    }
+/* MOBILE: Force circle shape (< 600px) */
+@media (max-width: 600px) {
+  .search-btn {
+    min-width: 48px !important;
+    width: 48px !important;
+    padding: 0 !important;
+    border-radius: 50% !important; /* Overrides rounded="pill" */
   }
 }
 
-.search-form-container {
-  display: flex;
-  flex-direction: column;
-  margin: 1rem 0;
-  padding: 1rem 0;
-  position: sticky;
-  bottom: 0;
-  left: 50%;
-  width: 100%;
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-}
-
-.city-form-research {
-  display: flex;
-  flex-direction: column;
-  margin: 1rem;
-  input {
-    margin-top: 1rem;
-    padding: 1rem;
-  }
-}
-
-.dates-form-research {
-  display: flex;
-  flex-direction: column;
-  margin: 1rem;
-  .dates-selectors-form-research {
-    display: flex;
-    flex-direction: row;
-    padding: 0.5rem;
-    .date-pickers-form-research {
-      display: flex;
-      flex-direction: column;
-      margin: 0 0.5rem;
-    }
+/* DESKTOP: Ensure proper spacing when text is visible (>= 600px) */
+@media (min-width: 600px) {
+  .search-btn {
+    padding-left: 20px !important;
+    padding-right: 24px !important;
   }
 }
 </style>

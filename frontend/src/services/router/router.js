@@ -8,30 +8,18 @@ const routes = [
     component: () => import('@/views/client/Home.vue'),
     meta: {
       requireAuth: false,
+      showSidebar: false, // Public: No sidebar
+      showHeader: true, // Public: Show header
     },
   },
   {
-    path: '/announce/',
+    path: '/announce/:id',
     name: 'Announce',
     component: () => import('@/views/client/Announce.vue'),
     meta: {
       requireAuth: false,
-    },
-  },
-  {
-    path: '/history',
-    name: 'History',
-    component: () => import('@/views/client/History.vue'),
-    meta: {
-      requireAuth: true,
-    },
-  },
-  {
-    path: '/car/:id',
-    name: 'Car',
-    component: () => import('@/views/Car.vue'),
-    meta: {
-      requireAuth: false,
+      showSidebar: false,
+      showHeader: true,
     },
     props: true,
   },
@@ -41,6 +29,8 @@ const routes = [
     component: () => import('@/views/Reserve.vue'),
     meta: {
       requireAuth: true,
+      showSidebar: false,
+      showHeader: true,
     },
     props: true,
   },
@@ -50,6 +40,8 @@ const routes = [
     component: () => import('@/views/client/Search.vue'),
     meta: {
       requireAuth: false,
+      showSidebar: false,
+      showHeader: true,
     },
     props: true,
   },
@@ -59,6 +51,8 @@ const routes = [
     component: () => import('@/views/authentification/Auth.vue'),
     meta: {
       requireAuth: false,
+      showSidebar: false,
+      showHeader: true,
     },
     children: [
       {
@@ -68,12 +62,12 @@ const routes = [
       {
         path: '/login',
         name: 'Login',
-        component: () => import('@/components/core/login.vue'),
+        component: () => import('@/components/core/authentification/Login.vue'),
       },
       {
         path: '/register',
         name: 'Register',
-        component: () => import('@/components/core/register.vue'),
+        component: () => import('@/components/core/authentification/Register.vue'),
       },
     ],
   },
@@ -83,6 +77,8 @@ const routes = [
     component: () => import('@/views/user/Account.vue'),
     meta: {
       requireAuth: true,
+      showSidebar: true,
+      showHeader: false,
     },
     children: [
       {
@@ -103,10 +99,10 @@ const routes = [
       {
         path: 'cars/add',
         name: 'NewCarAccount',
-        component: () => import('@/views/user/feature/NewCar.vue'),
+        component: () => import('@/views/user/feature/AddCar.vue'),
       },
       {
-        path: 'cars/edit/:id',
+        path: 'cars/edit/:carID',
         name: 'EditCarAccount',
         component: () => import('@/views/user/feature/EditCar.vue'),
         props: true,
@@ -128,9 +124,10 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   if (to.meta.requireAuth && !useUserStore().isLoggedIn()) {
     console.log('The user is not logged in')
-    next('/login') // Redirect to login page
+    next('/login')
   } else {
-    next() // Allow navigation
+    next()
   }
 })
+
 export default router

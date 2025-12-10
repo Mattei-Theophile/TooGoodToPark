@@ -3,12 +3,13 @@ import { Review } from '@/services/review.js'
 
 export class Reviews {
   centralizedReviews = []
-  averageRating
+  averageRating = 0
   api = Api.useApi()
+
   async fetchReviewsByCar(id_Car) {
     try {
       const res = await this.api.get(`/cars/${id_Car}/reviews`)
-
+      console.log(res)
       this.centralizedReviews.push(
         ...res.data.reviews.map((review) => this.createReviewFromApiData(review)),
       )
@@ -22,6 +23,7 @@ export class Reviews {
 
   createReviewFromApiData(reviewApiData) {
     const review = new Review()
+    console.log(reviewApiData)
     review.initBySettings({
       id: reviewApiData.id,
       rating: reviewApiData.rating,

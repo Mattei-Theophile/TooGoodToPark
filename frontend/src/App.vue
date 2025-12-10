@@ -1,75 +1,73 @@
 <script setup>
-import Header from "@/components/core/Header.vue";
-import Footer from "@/components/core/Footer.vue";
-import CookieBanner from "@/components/core/cookies/cookie-banner.vue";
-import 'v-calendar/style.css';
-// Handle cookie consent
+import { ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
+import Header from '@/components/core/navigation/Header.vue'
+import Footer from '@/components/core/navigation/Footer.vue'
+import CookieBanner from '@/components/core/cookies/cookie-banner.vue'
+import SidebarAccount from '@/components/core/navigation/SidebarAccount.vue'
+import BottomNavMenu from '@/components/core/navigation/BottomNavMenu.vue'
+import 'v-calendar/style.css'
+
+const { mobile } = useDisplay()
+const drawer = ref(!mobile.value)
+
+watch(mobile, (isMobile) => {
+  if (!isMobile) {
+    drawer.value = true
+  } else {
+    drawer.value = false
+  }
+})
+
 const handleCookieConsent = (consent) => {
-  console.log('Cookie consent given:', consent);
-
-  // Initialize analytics/marketing scripts based on consent
-  if (consent.analytics) {
-    // Initialize Google Analytics or other analytics
-    console.log('Analytics cookies allowed - initialize tracking');
-  }
-
-  if (consent.marketing) {
-    // Initialize marketing pixels/scripts
-    console.log('Marketing cookies allowed - initialize marketing tools');
-  }
-
-  if (consent.functional) {
-    // Initialize functional features
-    console.log('Functional cookies allowed');
-  }
-};
+  console.log('Cookie consent given:', consent)
+}
 </script>
 
 <template>
-  <Header />
-  <main>
+  <v-app>
+    <Header v-if="$route.meta.showHeader" @toggle-drawer="drawer = !drawer" />
 
-    <router-view />
+    <v-app-bar-nav-icon
+      v-if="$route.meta.showSidebar && mobile"
+      variant="text"
+      @click="drawer = !drawer"
+      class="top-0 left-0 mt-4 ml-2"
+      style="z-index: 900; font-size: 35px"
+      size="40"
+    ></v-app-bar-nav-icon>
 
-  </main>
+    <SidebarAccount v-model="drawer" v-if="$route.meta.showSidebar" />
 
-  <Footer />
+    <v-main class="bg-grey-lighten-4">
+      <v-container class="pa-0 main-wrapper">
+        <router-view />
+      </v-container>
+    </v-main>
 
-  <!-- Cookie Banner -->
-  <CookieBanner @consent-given="handleCookieConsent" />
+    <div class="navigation-wrapper">
+      <BottomNavMenu v-if="!mdAndUp" />
+      <Footer v-else />
+    </div>
+
+    <CookieBanner @consent-given="handleCookieConsent" />
+  </v-app>
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
+.main-wrapper {
+  max-width: 1440px;
+  margin: 0 auto;
+  min-height: 80vh;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
+@media (max-width: 960px) {
+  .main-wrapper {
+    max-width: 100%;
   }
 }
 
-main{
-  margin-top: 1rem;
-
+.navigation-wrapper {
+  width: 100%;
 }
-
 </style>

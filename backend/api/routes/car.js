@@ -10,16 +10,16 @@ const {
   getMyCars,
   getCarImage,
   getAvailableCars,
-  searchCars,
 } = require("../../services/cars/carService");
 
 const {
   upload,
   uploadCarImages,
   deleteCarImage,
-  updateCarImage,
-} = require("../../services/imageService");
-const { verifyCarOwnership } = require("../middleware/ownership/carOwnership");
+  updateCarImages,
+} = require("../../services/cars/imageService");
+
+const { verifyIsCarOwner } = require("../middleware/ownership/carOwnership");
 
 module.exports = {
   getCar: {
@@ -32,52 +32,10 @@ module.exports = {
     route: "/car/:id",
     action: [getCarById],
   },
-
-  getAvailableCars: {
-    method: "get",
-    route: "/cars/available",
-    action: [getAvailableCars],
-  },
-  getSearchedCars: {
-    method: "get",
-    route: "/cars/search",
-    action: [searchCars],
-  },
   getMyCars: {
     method: "get",
     route: "/cars/mycars",
     action: [auth.authenticateTokenWithRefresh, getMyCars],
-  },
-  getCarImages: {
-    method: "get",
-    route: "/car/:carId/images",
-    action: [getCarImages],
-  },
-  // Upload images
-  uploadCarImages: {
-    method: "post",
-    route: "/car/:carId/images",
-    action: [
-      auth.authenticateTokenWithRefresh,
-      upload.array("images", 10),
-      uploadCarImages,
-    ],
-  },
-  // Get single image by ID
-  getCarImage: {
-    method: "get",
-    route: "/car/:carId/image/:imageId",
-    action: [getCarImage],
-  },
-  updateCarImage: {
-    method: "put",
-    route: "/car/:carId/images/:imageId",
-    action: [auth.authenticateTokenWithRefresh, updateCarImage],
-  },
-  deleteCarImage: {
-    method: "delete",
-    route: "/car/:carId/images/:imageId",
-    action: [auth.authenticateTokenWithRefresh, deleteCarImage],
   },
   createCar: {
     method: "post",
@@ -91,7 +49,49 @@ module.exports = {
   },
   deleteCar: {
     method: "delete",
-    route: "/cars",
+    route: "/cars/:carId",
     action: [auth.authenticateTokenWithRefresh, deleteCar],
+  },
+  ////////////////////// Search Car Routes ////////////////////////
+  getAvailableCars: {
+    method: "get",
+    route: "/cars/available",
+    action: [getAvailableCars],
+  },
+
+  /////////////////////// Car Images Routes ////////////////////////
+  getCarImage: {
+    method: "get",
+    route: "/car/:carId/image/:imageId",
+    action: [getCarImage],
+  },
+
+  getCarImages: {
+    method: "get",
+    route: "/car/:carId/images",
+    action: [getCarImages],
+  },
+  uploadCarImages: {
+    method: "post",
+    route: "/cars/:carId/images",
+    action: [
+      auth.authenticateTokenWithRefresh,
+      upload.array("images", 10),
+      uploadCarImages,
+    ],
+  },
+  updateCarImages: {
+    method: "put",
+    route: "/cars/:carId/images",
+    action: [
+      auth.authenticateTokenWithRefresh,
+      upload.array("images", 10),
+      updateCarImages,
+    ],
+  },
+  deleteCarImages: {
+    method: "delete",
+    route: "/cars/:carId/images",
+    action: [auth.authenticateTokenWithRefresh, deleteCarImage],
   },
 };

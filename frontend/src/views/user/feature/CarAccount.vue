@@ -1,50 +1,61 @@
 <script setup>
 import { onBeforeMount, ref } from 'vue'
 import { Cars } from '@/services/Cars.js'
-import CarBigInfo from '@/components/car/carBigInfo.vue'
+import CarEditInfo from '@/components/car/CarEditInfo.vue'
+import { useDisplay } from 'vuetify'
 
-const cars = ref(null)
-cars.value = new Cars()
+const { mobile } = useDisplay()
+const isLoading = ref(true)
+const cars = ref(new Cars())
+
 onBeforeMount(async () => {
   try {
-    cars.value.fetchMyCars()
+    await cars.value.fetchMyCars()
   } catch (error) {
     console.error('Failed to fetch cars:', error)
+  } finally {
+    isLoading.value = false
   }
 })
 </script>
 
 <template>
-  <p>My Cars</p>
+  <v-container fluid class="pa-4 fill-height align-start bg-grey-lighten-5">
+    <div class="d-flex align-center mb-6">
+      <h2 class="text-h4 font-weight-bold text-green-darken-3">My Cars</h2>
+    </div>
 
-  <car-big-info v-for="car in cars.centralizedCars" :key="car.id" :car="car" />
+    <v-overlay :model-value="isLoading" class="align-center justify-center" persistent>
+      <v-progress-circular color="primary" indeterminate size="64"></v-progress-circular>
+    </v-overlay>
 
-  <div v-if="cars.centralizedCars.length === 0">No cars found.</div>
+    <div v-if="!isLoading" class="w-100">
+      <v-alert
+        v-if="cars.centralizedCars.length === 0"
+        type="info"
+        variant="tonal"
+        icon="mdi-car-off"
+        title="No cars found"
+        text="You haven't added any cars yet."
+      ></v-alert>
 
-  <div class="add-car" @click="$router.push('cars/add')">
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="64"
-      height="64"
-      fill="currentColor"
-      class="bi bi-plus-circle-fill"
-      viewBox="0 0 16 16"
-    >
-      <path
-        d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0M8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3z"
-      />
-    </svg>
-  </div>
+      <v-row v-else>
+        <v-col cols="12" v-for="car in cars.centralizedCars" :key="car.id">
+          <car-edit-info :carID="car.id" />
+        </v-col>
+      </v-row>
+    </div>
+
+    <v-btn
+      icon="mdi-plus"
+      color="#216c37"
+      theme="dark"
+      size="x-large"
+      elevation="4"
+      position="fixed"
+      location="bottom right"
+      :style="{ bottom: mobile ? '80px' : '32px', right: '32px', zIndex: 100 }"
+      @click="$router.push('cars/add')"
+    ></v-btn>
+  </v-container>
 </template>
-
-<style scoped>
-.add-car {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  cursor: pointer;
-  svg {
-    fill: #216c37;
-  }
-}
-</style>

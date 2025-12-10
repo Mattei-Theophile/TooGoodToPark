@@ -1,45 +1,28 @@
 <script setup lang="ts">
 import { computed, ref, reactive, watch, PropType } from 'vue'
-// Assuming filterFunctions is imported and has the functions from your previous prompt
-// (e.g., byPrice, byKilometers, byRating, etc.)
 import { filterFunctions } from '@/services/filter/filterPipeline.js'
 import { Car } from '@/services/Car'
-// --- Props ---
+
 const props = defineProps({
   cars: {
     type: Array as PropType<Car[]>,
     required: true,
   },
 })
-
 const emit = defineEmits(['update:filteredCars'])
 
-// --- UI State ---
 const activeFilterMenu = ref(false)
 
 // --- Filter Selection ---
 // This list MUST match the keys in your filterFunctions object
-const allFilterNames = ref([
-  'byPrice',
-  'byMileage', // Changed from byMileage
-  'byRating',
-  'byBrand',
-  'byModel',
-  'byYearOfCreation',
-  // 'byLocation' could be added if it exists in your service
-])
+const allFilterNames = ref(['Price', 'Mileage', 'Rating', 'Brand', 'Model', 'YearOfCreation'])
 
-const isTextFilter = computed(() =>
-  ['byBrand', 'byModel', 'byLocation'].includes(selectedFilter.value),
-)
+const isTextFilter = computed(() => ['Brand', 'Model', 'Location'].includes(selectedFilter.value))
 const isSortFilter = computed(() =>
-  ['byPrice', 'byMileage', 'byRating', 'byYearOfCreation'].includes(selectedFilter.value),
+  ['Price', 'Mileage', 'Rating', 'YearOfCreation'].includes(selectedFilter.value),
 )
 const selectedFilter = ref(allFilterNames.value[0]) // e.g., 'byPrice'
 
-// --- Reactive Filter Options ---
-// This object holds the inputs for ALL filter types.
-// The UI will use v-if to show the correct inputs.
 const options = reactive({
   min: null as number | null,
   max: null as number | null,
@@ -47,9 +30,6 @@ const options = reactive({
   textValue: '' as string,
 })
 
-// --- Watcher ---
-// When the user picks a new filter (e.g., from 'byPrice' to 'byMarque'),
-// reset the options to avoid using old values.
 watch(selectedFilter, () => {
   options.min = null
   options.max = null
@@ -58,43 +38,35 @@ watch(selectedFilter, () => {
   activeFilterMenu.value = false // Close the dropdown
 })
 
-// --- The Refactored Computed Property (The "Pipeline") ---
 const filteredCars = computed(() => {
   const filterName = selectedFilter.value
-  // Get the actual function from the imported object
   const filterFn = filterFunctions[filterName]
 
-  // Create a shallow copy of the cars array.
-  // This ensures we don't mutate the prop and guarantees a NEW array reference
-  // is returned, which triggers the reactivity updates immediately.
   const carsCopy = [...props.cars]
 
-  // Guard clause: if function doesn't exist, return all cars
   if (typeof filterFn !== 'function') {
     console.warn(`Filter function "${filterName}" not found.`)
     return carsCopy
   }
   console.log('sort')
 
-  // Call the correct function with the correct arguments
-  // based on the filter name
   try {
     switch (filterName) {
-      case 'byPrice':
+      case 'Price':
         return filterFn(carsCopy, options.order)
-      case 'byMileage':
-        return filterFn(carsCopy, options.order)
-
-      case 'byRating':
-        return filterFn(carsCopy, options.order)
-      case 'byYearOfCreation':
-        // Assuming these functions take (cars, order)
+      case 'Mileage':
         return filterFn(carsCopy, options.order)
 
-      case 'byBrand':
+      case 'Rating':
+        return filterFn(carsCopy, options.order)
+      case 'YearOfCreation':
+        return filterFn(carsCopy, options.order)
+
+      case 'Brand':
         return filterFn(carsCopy, options.textValue)
-      case 'byModel':
-      case 'byLocation':
+      case 'Model':
+        return filterFn(carsCopy, options.textValue)
+      case 'Location':
         return filterFn(carsCopy, options.textValue)
 
       default:
@@ -106,7 +78,6 @@ const filteredCars = computed(() => {
   }
 })
 
-// Watch for changes in filteredCars and emit the result to parent
 watch(
   filteredCars,
   (newVal) => {
@@ -130,32 +101,16 @@ function toggleSortOrder() {
   <div class="filter-system">
     <!-- Filter Selector Dropdown -->
     <div class="filter-selector">
-      <div class="dropdown">
-        <button class="dropdown-toggle" @click="activeFilterMenu = !activeFilterMenu">
-          <span>{{ selectedFilter }}</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="currentColor"
-            viewBox="0 0 16 16"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"
-            />
-          </svg>
-        </button>
-        <ul v-if="activeFilterMenu" class="dropdown-menu">
-          <li
-            v-for="filterName in allFilterNames"
-            :key="filterName"
-            @click="selectFilter(filterName)"
-          >
-            {{ filterName }}
-          </li>
-        </ul>
-      </div>
+      <v-select
+        v-model="selectedFilter"
+        :items="allFilterNames"
+        label="Filter By"
+        density="compact"
+        variant="outlined"
+        hide-details
+        bg-color="white"
+        menu-icon="mdi-chevron-down"
+      ></v-select>
     </div>
 
     <!-- Conditional Filter Options -->
@@ -210,18 +165,17 @@ function toggleSortOrder() {
 </template>
 
 <style scoped>
-/* A cleaner, more modern style for the filter component */
 .filter-system {
   display: flex;
-  justify-content: space-between;
   padding: 0.5rem;
   margin: 1rem 0;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
-
 .filter-selector {
   display: flex;
   align-items: center;
-  gap: 10px;
   margin-bottom: 16px;
 }
 
@@ -256,8 +210,9 @@ function toggleSortOrder() {
   list-style: none;
   padding: 0;
   margin: 4px 0 0;
-  width: 100%;
-  z-index: 10;
+  width: max-content;
+  min-width: 100%;
+  z-index: 20;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 

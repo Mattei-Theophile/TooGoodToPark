@@ -404,21 +404,17 @@ async function getReservation(req, res) {
                 r.Date_End_Reservation,
                 r.Status,
                 r.Created_At,
-                c.Nom_Client,
-                c.Prenom_Client,
+                r.location_reservation,
+                c.Surname_Client,
+                c.Name_Client,
                 c.Email_Client,
-                c.Numero_Telephone,
-                car.Name_Car,
-                car.Marque_Car,
-                car.Modele_Car,
+                c.PhoneNumber_Client,
+                car.Brand_Car,
+                car.Model_Car,
                 car.Price_Car,
-                ar.Rental_Status,
-                ar.Actual_Pickup_Time,
-                ar.Expected_Return_Time
             FROM reservations r
             JOIN Client c ON r.ID_Client = c.ID_Client
             JOIN Car car ON r.ID_Car = car.ID_Car
-            LEFT JOIN Active_Rentals ar ON r.ID_Reservation = ar.ID_Reservation
             WHERE ${whereConditions.join(" AND ")}
             ORDER BY r.${sortBy} ${order}
             LIMIT ? OFFSET ?
@@ -561,7 +557,7 @@ async function getReservationsByUser(req, res) {
     const [userExists] = await conn
       .promise()
       .query(
-        "SELECT ID_Client, Nom_Client, Prenom_Client, Email_Client FROM Client WHERE ID_Client = ?",
+        "SELECT ID_Client, Surname_Client, Name_Client, Email_Client FROM Client WHERE ID_Client = ?",
         [userId],
       );
     if (userExists.length === 0) {
@@ -628,25 +624,19 @@ async function getReservationsByUser(req, res) {
                 r.Status,
                 r.Created_At,
                 r.Updated_At,
+                r.location_reservation,
                 car.ID_Car,
-                car.Name_Car,
-                car.Marque_Car,
-                car.Modele_Car,
+                car.Brand_Car,
+                car.Model_Car,
                 car.Price_Car,
                 car.Description_Car,
-                CONCAT(owner.Prenom_Client, ' ', owner.Nom_Client) as Car_Owner_Name,
+                CONCAT(owner.Name_Client, ' ', owner.Surname_Client) as Car_Owner_Name,
                 owner.Email_Client as Car_Owner_Email,
-                owner.Numero_Telephone as Car_Owner_Phone,
-                ar.Rental_Status,
-                ar.Actual_Pickup_Time,
-                ar.Expected_Return_Time,
-                ar.Current_Mileage,
-                ar.Security_Deposit_Amount,
-                ar.Security_Deposit_Status
+                owner.PhoneNumber_Client as Car_Owner_Phone
             FROM reservations r
             JOIN Car car ON r.ID_Car = car.ID_Car
             JOIN Client owner ON car.ID_Seller = owner.ID_Client
-            LEFT JOIN Active_Rentals ar ON r.ID_Reservation = ar.ID_Reservation
+      
             WHERE ${whereConditions.join(" AND ")}
             ORDER BY r.${sortBy} ${order}
             LIMIT ? OFFSET ?
@@ -670,19 +660,43 @@ async function getReservationsByUser(req, res) {
     // Get reservation statistics
     const [stats] = await conn.promise().query(
       `
-            SELECT 
-                COUNT(*) as total_reservations,
-                SUM(CASE WHEN Status = 'pending' THEN 1 ELSE 0 END) as pending_count,
-                SUM(CASE WHEN Status = 'confirmed' THEN 1 ELSE 0 END) as confirmed_count,
-                SUM(CASE WHEN Status = 'active' THEN 1 ELSE 0 END) as active_count,
-                SUM(CASE WHEN Status = 'completed' THEN 1 ELSE 0 END) as completed_count,
-                SUM(CASE WHEN Status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count,
-                SUM(Price_Reservation) as total_spent,
-                AVG(Price_Reservation) as average_booking_value
-            FROM reservations r
-            JOIN Car car ON r.ID_Car = car.ID_Car
-            WHERE ${whereConditions.join(" AND ")}
-        `,
+                SELECT 
+                    COUNT(*) as total_reservations,
+                    SUM(CASE WHEN Status = 'pending' THEN 1 ELSE 0 END) as pending_count,
+                    SUM(CASE WHEN Status = 'confirmed' THEN 1 ELSE 0 END) as confirmed_count,
+                    SUM(CASE WHEN Status = 'active' THEN 1 ELSE 0 END) as active_count,
+                    SUM(CASE WHEN Status = 'completed' THEN 1 ELSE 0 END) as completed_count,
+                    SUM(CASE WHEN Status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count,
+                    SUM(Price_Reservation) as total_spent,
+                    AVG(Price_Reservation) as average_booking_value,
+                    SUM(CASE 
+                        WHEN Status IN ('completed', 'active') 
+                        THEN TIMESTAMPDIFF(HOUR, Date_Start_Reservation, Date_End_Reservation) 
+                        ELSE 0 
+                    END) as total_hours_rented,
+                    MAX(CASE 
+                        WHEN Status IN ('completed', 'active') 
+                        THEN DATEDIFF(Date_End_Reservation, Date_Start_Reservation) 
+                        ELSE 0 
+                    END) as longest_rental_days
+                FROM reservations r
+                JOIN Car car ON r.ID_Car = car.ID_Car
+                WHERE ${whereConditions.join(" AND ")}
+            `,
+      queryParams,
+    );
+
+    // Get favorite car brand
+    const [favoriteCar] = await conn.promise().query(
+      `
+              SELECT car.Brand_Car, COUNT(*) as count
+              FROM reservations r
+              JOIN Car car ON r.ID_Car = car.ID_Car
+              WHERE ${whereConditions.join(" AND ")}
+              GROUP BY car.Brand_Car
+              ORDER BY count DESC
+              LIMIT 1
+          `,
       queryParams,
     );
 
@@ -766,6 +780,10 @@ async function getReservationsByUser(req, res) {
           averageBookingValue: parseFloat(
             stats[0].average_booking_value || 0,
           ).toFixed(2),
+          totalHoursRented: parseInt(stats[0].total_hours_rented || 0),
+          longestRentalDays: parseInt(stats[0].longest_rental_days || 0),
+          favoriteBrand:
+            favoriteCar.length > 0 ? favoriteCar[0].Brand_Car : null,
         },
         pagination: {
           currentPage: parseInt(page),
@@ -778,43 +796,6 @@ async function getReservationsByUser(req, res) {
     });
   } catch (error) {
     console.error("Error fetching user reservations:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-}
-
-async function getMonthlyStats(req, res) {
-  try {
-    const userId = req.user.id;
-    const database = new Database();
-    const conn = await database.connect();
-
-    const [stats] = await conn.promise().query(
-      `
-                SELECT 
-                    DATE_FORMAT(Date_Start_Reservation, '%Y-%m') as month,
-                    COUNT(*) as total_reservations,
-                    COALESCE(SUM(Price_Reservation), 0) as total_spent,
-                    COALESCE(AVG(Price_Reservation), 0) as average_booking_value,
-                    SUM(CASE WHEN Status = 'completed' THEN 1 ELSE 0 END) as completed_count,
-                    SUM(CASE WHEN Status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count
-                FROM reservations
-                WHERE ID_Client = ?
-                GROUP BY month
-               
-            `,
-      [userId],
-    );
-
-    res.status(200).json({
-      success: true,
-      data: stats,
-    });
-  } catch (error) {
-    console.error("Error fetching monthly stats:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -866,8 +847,7 @@ async function createReservation(req, res) {
   try {
     const { ID_Car, startDate, endDate } = req.body;
     const clientId = req.user.id;
-    console.log("creation of the reservation");
-    console.log(req.body);
+
     // Validation
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -929,7 +909,7 @@ async function createReservation(req, res) {
             SELECT ID_Reservation 
             FROM reservations 
             WHERE ID_Car = ? 
-            AND Status IN ('available', 'reserved', 'active')
+            AND Status IN ('available')
             AND (
                 (Date_Start_Reservation <= ? AND Date_End_Reservation > ?) OR
                 (Date_Start_Reservation < ? AND Date_End_Reservation >= ?) OR
@@ -980,30 +960,17 @@ async function createReservation(req, res) {
                 r.Date_End_Reservation,
                 r.Status,
                 r.Created_At,
-                c.Nom_Client,
-                c.Prenom_Client,
+                c.Surname_Client,
+                c.Name_Client,
                 c.Email_Client,
-                car.Name_Car,
-                car.Marque_Car,
-                car.Modele_Car
+                car.Brand_Car,
+                car.Model_Car
             FROM reservations r
             JOIN Client c ON r.ID_Client = c.ID_Client
             JOIN Car car ON r.ID_Car = car.ID_Car
             WHERE r.ID_Reservation = ?
         `,
       [reservationId],
-    );
-
-    // Update car availability status
-    await conn.promise().query(
-      `
-            UPDATE Car_Availability 
-            SET Status = 'reserved' 
-            WHERE ID_Car = ? 
-            AND Date_Start_Available <= ? 
-            AND Date_End_Available >= ?
-        `,
-      [ID_Car, formattedEndDate, formattedStartDate],
     );
 
     res.status(201).json({
@@ -1065,7 +1032,6 @@ async function updateReservation(req, res) {
   try {
     const { ID_Car, reservationId, status, startDate, endDate } = req.body;
     const clientId = req.user.id;
-    const userRole = req.user.role;
 
     if (!reservationId) {
       return res.status(400).json({
@@ -1103,16 +1069,14 @@ async function updateReservation(req, res) {
     const reservation = existingReservation[0];
     const isOwner = reservation.ID_Client === clientId;
     const isCarOwner = reservation.ID_Seller === clientId;
-    const isAdmin = userRole === 4;
 
     // Authorization check
-    if (!isOwner && !isCarOwner && !isAdmin) {
+    if (!isOwner && !isCarOwner) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to update this reservation",
       });
     }
-    console.log("isadmin : " + isAdmin);
     // Status update logic
     if (status) {
       /**
@@ -1187,7 +1151,7 @@ async function updateReservation(req, res) {
                     FROM reservations 
                     WHERE ID_Car = ? 
                     AND ID_Reservation != ?
-                    AND Status IN ('pending', 'confirmed', 'active')
+                    AND Status IN ('available')
                     AND (
                         (Date_Start_Reservation <= ? AND Date_End_Reservation > ?) OR
                         (Date_Start_Reservation < ? AND Date_End_Reservation >= ?) OR
@@ -1251,56 +1215,6 @@ async function updateReservation(req, res) {
         updateValues,
       );
 
-    // Handle status-specific actions
-    if (status === "active") {
-      // Create active rental record
-      const [carPrice] = await conn
-        .promise()
-        .query("SELECT Price_Car FROM Car WHERE ID_Car = ?", [ID_Car]);
-
-      await conn.promise().query(
-        `
-                INSERT INTO Active_Rentals 
-                (ID_Reservation, ID_Car, ID_Client, Start_Date, End_Date, Actual_Pickup_Time)
-                VALUES (?, ?, ?, ?, ?, NOW())
-            `,
-        [
-          reservationId,
-          ID_Car,
-          reservation.ID_Client,
-          newStartDate,
-          newEndDate,
-        ],
-      );
-    }
-
-    if (status === "completed") {
-      // Remove from active rentals
-      await conn
-        .promise()
-        .query("DELETE FROM Active_Rentals WHERE ID_Reservation = ?", [
-          reservationId,
-        ]);
-    }
-
-    if (status === "cancelled") {
-      // Update car availability back to available
-      await conn.promise().query(
-        `
-                UPDATE Car_Availability 
-                SET Status = 'available' 
-                WHERE ID_Car = ? 
-                AND Date_Start_Available <= ? 
-                AND Date_End_Available >= ?
-            `,
-        [
-          ID_Car,
-          reservation.Date_End_Reservation,
-          reservation.Date_Start_Reservation,
-        ],
-      );
-    }
-
     // Get updated reservation
     const [updatedReservation] = await conn.promise().query(
       `
@@ -1311,11 +1225,10 @@ async function updateReservation(req, res) {
                 r.Date_End_Reservation,
                 r.Status,
                 r.Created_At,
-                c.Nom_Client,
-                c.Prenom_Client,
-                car.Name_Car,
-                car.Marque_Car,
-                car.Modele_Car
+                c.Surname_Client,
+                c.Name_Client,
+                car.Brand_Car,
+                car.Model_Car
             FROM reservations r
             JOIN Client c ON r.ID_Client = c.ID_Client
             JOIN Car car ON r.ID_Car = car.ID_Car
@@ -1366,7 +1279,6 @@ async function deleteReservation(req, res) {
   try {
     const { reservationId, ID_Car } = req.body;
     const clientId = req.user.id;
-    const userRole = req.user.role;
     console.log("reservationId : " + reservationId);
     if (!reservationId) {
       return res.status(400).json({
@@ -1405,10 +1317,9 @@ async function deleteReservation(req, res) {
     const reservation = existingReservation[0];
     const isOwner = reservation.ID_Client === clientId;
     const isCarOwner = reservation.ID_Seller === clientId;
-    const isAdmin = userRole === "admin";
 
     // Authorization check
-    if (!isOwner && !isCarOwner && !isAdmin) {
+    if (!isOwner && !isCarOwner) {
       return res.status(403).json({
         success: false,
         message: "You are not authorized to delete this reservation",
@@ -1429,29 +1340,6 @@ async function deleteReservation(req, res) {
         message: "Cannot delete completed reservation for record keeping.",
       });
     }
-
-    // Remove from active rentals if exists
-    await conn
-      .promise()
-      .query("DELETE FROM Active_Rentals WHERE ID_Reservation = ?", [
-        reservationId,
-      ]);
-
-    // Update car availability back to available
-    await conn.promise().query(
-      `
-            UPDATE Car_Availability 
-            SET Status = 'available' 
-            WHERE ID_Car = ? 
-            AND Date_Start_Available <= ? 
-            AND Date_End_Available >= ?
-        `,
-      [
-        ID_Car,
-        reservation.Date_End_Reservation,
-        reservation.Date_Start_Reservation,
-      ],
-    );
 
     // Delete reservation
     await conn
@@ -1481,5 +1369,4 @@ module.exports = {
   createReservation,
   updateReservation,
   deleteReservation,
-  getMonthlyStats,
 };

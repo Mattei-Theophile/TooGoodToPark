@@ -39,8 +39,8 @@ async function getReviews(req, res) {
                 r.Note_Review,
                 r.Commentaire_Review,
                 r.Created_At,
-                c.Nom_Client,
-                c.Prenom_Client
+                c.Surname_Client,
+                c.Name_Client
             FROM Review r
             JOIN Client c ON r.ID_client = c.ID_Client
             WHERE r.ID_car = ?
@@ -74,8 +74,8 @@ async function getReviews(req, res) {
           comment: review.Commentaire_Review,
           createdAt: review.Created_At,
           reviewer: {
-            firstName: review.Prenom_Client,
-            lastName: review.Nom_Client,
+            firstName: review.Name_Client,
+            lastName: review.Surname_Client,
           },
         })),
         pagination: {
@@ -114,6 +114,7 @@ async function createReview(req, res) {
     const { rating, comment } = req.body;
     const clientId = req.user.id; // From auth middleware
 
+    console.log(id, rating, comment);
     // Validation
     if (!rating || rating < 1 || rating > 5) {
       return res.status(400).json({
@@ -186,8 +187,8 @@ async function createReview(req, res) {
                 r.Note_Review,
                 r.Commentaire_Review,
                 r.Created_At,
-                c.Nom_Client,
-                c.Prenom_Client
+                c.Surname_Client,
+                c.Name_Client
             FROM Review r
             JOIN Client c ON r.ID_client = c.ID_Client
             WHERE r.ID_Review = ?
@@ -309,8 +310,8 @@ async function updateReview(req, res) {
                 r.Note_Review,
                 r.Commentaire_Review,
                 r.Created_At,
-                c.Nom_Client,
-                c.Prenom_Client
+                c.Surname_Client,
+                c.Name_Client
             FROM Review r
             JOIN Client c ON r.ID_client = c.ID_Client
             WHERE r.ID_Review = ?

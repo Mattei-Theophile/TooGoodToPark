@@ -1,6 +1,5 @@
 const database = require("../../database/database");
 const path = require("path");
-const fs = require("fs-extra");
 
 /**
  * @swagger
@@ -123,7 +122,7 @@ const fs = require("fs-extra");
  *             allOf:
  *               - $ref: '#/components/schemas/Car'
  *               - type: object
- *                 required: ['ID_Car']
+ *                 required: ['carId']
  *     responses:
  *       200:
  *         description: Car updated successfully
@@ -166,9 +165,9 @@ const fs = require("fs-extra");
  *         application/json:
  *           schema:
  *             type: object
- *             required: ['ID_Car']
+ *             required: ['carId']
  *             properties:
- *               ID_Car:
+ *               carId:
  *                 type: integer
  *                 description: ID of car to delete
  *     responses:
@@ -271,21 +270,10 @@ function getCars(req, res) {
   const { index, limit } = req.params;
   let params = [];
   let query = `SELECT 
-                    c.ID_Car,
-                    c.ID_Seller,
-                    c.Name_Car,
-                    c.Marque_Car,
-                    c.Modele_Car,
-                    c.Annee_Car,
-                    c.Kilometrage_Car,
-                    c.Description_Car,
-                    c.Price_Car,
-                    c.Date_Car,
-                    c.Created_At,
-                    c.Updated_At,
-                    CONCAT(seller.Prenom_Client, ' ', seller.Nom_Client) as Seller_Name,
+                    c.*,
+                    CONCAT(seller.Name_Client, ' ', seller.Surname_Client) as Seller_Name,
                     seller.Email_Client as Seller_Email,
-                    seller.Numero_Telephone as Seller_Phone
+                    seller.PhoneNumber_Client as Seller_Phone
                  FROM Car c
                  LEFT JOIN Client seller ON c.ID_Seller = seller.ID_Client`;
 
@@ -314,7 +302,6 @@ function getCars(req, res) {
     }
 
     if (results) {
-      console.log("Cars retrieved:", results.length);
       res.status(200).json({
         success: true,
         data: results,
@@ -334,14 +321,14 @@ function getCarById(req, res) {
 
   let query = `SELECT 
                     c.*,
-                    CONCAT(seller.Prenom_Client, ' ', seller.Nom_Client) as Seller_Name,
+                    CONCAT(seller.Name_Client, ' ', seller.Surname_Client) as Seller_Name,
                     seller.Email_Client as Seller_Email,
-                    seller.Numero_Telephone as Seller_Phone,
+                    seller.PhoneNumber_Client as Seller_Phone,
                     ROUND(AVG(r.Note_Review), 2) as Average_Rating,
                     COUNT(r.ID_Review) as Total_Reviews
                  FROM Car c
                  LEFT JOIN Client seller ON c.ID_Seller = seller.ID_Client
-                 LEFT JOIN Review r ON c.ID_Car = r.ID_car
+                 LEFT JOIN Review r ON c.ID_Car = r.ID_Car
                  WHERE c.ID_Car = ?
                  GROUP BY c.ID_Car`;
 
@@ -376,15 +363,16 @@ function getMyCars(req, res) {
   }
 
   let query = `SELECT 
+  
                         c.*,
-                        CONCAT(seller.Prenom_Client, ' ', seller.Nom_Client) as Seller_Name,
+                        CONCAT(seller.Name_Client, ' ', seller.Surname_Client) as Seller_Name,
                         seller.Email_Client as Seller_Email,
-                        seller.Numero_Telephone as Seller_Phone,
+                        seller.PhoneNumber_Client as Seller_Phone,
                         ROUND(AVG(r.Note_Review), 2) as Average_Rating,
                         COUNT(r.ID_Review) as Total_Reviews
                      FROM Car c
                      LEFT JOIN Client seller ON c.ID_Seller = seller.ID_Client
-                     LEFT JOIN Review r ON c.ID_Car = r.ID_car
+                     LEFT JOIN Review r ON c.ID_Car = r.ID_Car
                      WHERE c.ID_Seller = ?
                      GROUP BY c.ID_Car`;
 
@@ -409,56 +397,64 @@ function getMyCars(req, res) {
 }
 
 function createCar(req, res) {
+  const { id } = req.user;
   const {
-    id_seller,
-    name_car,
-    marque_car,
-    modele_car,
-    annee_car,
-    kilometrage_car,
-    description_car,
-    price_car,
-    id_client,
+    brand,
+    model,
+    year,
+    mileage,
+    description,
+    price,
+    location,
+    licensePlate,
+    passenger,
+    status,
   } = req.body;
 
+  console.log(req.body);
   // Validation
   if (
-    !id_seller ||
-    !name_car ||
-    !marque_car ||
-    !modele_car ||
-    !annee_car ||
-    !kilometrage_car ||
-    !price_car
+    !id ||
+    !brand ||
+    !model ||
+    !year ||
+    !mileage ||
+    !price ||
+    !licensePlate ||
+    !passenger
   ) {
     return res.status(400).json({
       error:
-        "Missing required fields: id_seller, name_car, marque_car, modele_car, annee_car, kilometrage_car, price_car",
+        "Missing required fields: id_seller, brand_car, model_car, year_car, mileage, price, license Plate, passenger",
     });
   }
 
   let params = [
-    id_seller,
-    name_car,
-    marque_car,
-    modele_car,
-    annee_car,
-    kilometrage_car,
-    description_car,
-    price_car,
-    id_client,
+    id,
+    brand,
+    model,
+    year,
+    mileage,
+    description,
+    price,
+    location,
+    licensePlate,
+    passenger,
+    status,
   ];
   let query = `INSERT INTO Car (
                     ID_Seller, 
-                    Name_Car, 
-                    Marque_Car, 
-                    Modele_Car, 
-                    Annee_Car, 
-                    Kilometrage_Car, 
+                    Brand_Car,
+                    Model_Car,
+                    Year_Car, 
+                    Mileage_Car, 
                     Description_Car, 
-                    Price_Car, 
-                    ID_Client
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                    Price_Car,
+                   Location_Car,
+                   LicensePlate_Car,
+                   Passenger_Car,
+                   Status_Car
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
   const db = new database.Database();
   const conn = db.connect();
@@ -488,18 +484,20 @@ function createCar(req, res) {
 
 function updateCar(req, res) {
   const {
-    ID_Car,
-    name_car,
-    marque_car,
-    modele_car,
-    annee_car,
-    kilometrage_car,
-    description_car,
-    price_car,
-    id_client,
+    carId,
+    brand,
+    model,
+    year,
+    mileage,
+    description,
+    price,
+    location,
+    licensePlate,
+    passenger,
+    status,
   } = req.body;
 
-  if (!ID_Car) {
+  if (!carId) {
     return res.status(400).json({ error: "Car ID is required" });
   }
 
@@ -507,51 +505,59 @@ function updateCar(req, res) {
   let updateFields = [];
   let params = [];
 
-  if (name_car !== undefined) {
-    updateFields.push("Name_Car = ?");
-    params.push(name_car);
+  if (brand !== undefined) {
+    updateFields.push("Brand_Car = ?");
+    params.push(brand);
   }
-  if (marque_car !== undefined) {
-    updateFields.push("Marque_Car = ?");
-    params.push(marque_car);
+  if (model !== undefined) {
+    updateFields.push("Model_Car = ?");
+    params.push(model);
   }
-  if (modele_car !== undefined) {
-    updateFields.push("Modele_Car = ?");
-    params.push(modele_car);
+  if (year !== undefined) {
+    updateFields.push("Year_Car = ?");
+    params.push(year);
   }
-  if (annee_car !== undefined) {
-    updateFields.push("Annee_Car = ?");
-    params.push(annee_car);
+  if (mileage !== undefined) {
+    updateFields.push("Mileage_Car = ?");
+    params.push(mileage);
   }
-  if (kilometrage_car !== undefined) {
-    updateFields.push("Kilometrage_Car = ?");
-    params.push(kilometrage_car);
-  }
-  if (description_car !== undefined) {
+  if (description !== undefined) {
     updateFields.push("Description_Car = ?");
-    params.push(description_car);
+    params.push(description);
   }
-  if (price_car !== undefined) {
+  if (price !== undefined) {
     updateFields.push("Price_Car = ?");
-    params.push(price_car);
+    params.push(price);
   }
-  if (id_client !== undefined) {
-    updateFields.push("ID_Client = ?");
-    params.push(id_client);
+  if (location !== undefined) {
+    updateFields.push("Location_Car = ?");
+    params.push(location);
+  }
+  if (licensePlate !== undefined) {
+    updateFields.push("LicensePlate_Car = ?");
+    params.push(licensePlate);
+  }
+  if (passenger !== undefined) {
+    updateFields.push("Passenger_Car = ?");
+    params.push(passenger);
+  }
+  if (status !== undefined) {
+    updateFields.push("Status_Car = ?");
+    params.push(status);
   }
 
   if (updateFields.length === 0) {
     return res.status(400).json({ error: "No fields to update" });
   }
 
-  params.push(ID_Car); // Add ID for WHERE clause
+  params.push(carId);
 
   let query = `UPDATE Car SET ${updateFields.join(", ")} WHERE ID_Car = ?`;
 
   const db = new database.Database();
   const conn = db.connect();
 
-  conn.query(query, params, function (err, results) {
+  conn.promise().query(query, params, function (err, results) {
     if (err) {
       console.error("Database error:", err);
       res.status(500).json({ error: "Failed to update car" });
@@ -577,9 +583,8 @@ function updateCar(req, res) {
 }
 
 function deleteCar(req, res) {
-  const { ID_Car } = req.body;
-
-  if (!ID_Car) {
+  const { carId } = req.params;
+  if (!carId) {
     return res.status(400).json({ error: "Car ID is required" });
   }
 
@@ -587,7 +592,7 @@ function deleteCar(req, res) {
   const db = new database.Database();
   const conn = db.connect();
 
-  conn.query(query, [ID_Car], function (err, results) {
+  conn.promise().query(query, [carId], function (err, results) {
     if (err) {
       console.error("Database error:", err);
       res.status(500).json({ error: "Failed to delete car" });
@@ -613,127 +618,39 @@ function deleteCar(req, res) {
 }
 
 function getAvailableCars(req, res) {
-  const { startDate, endDate, limit = 10 } = req.params;
-
+  const { startDate, endDate, location, passenger, limit = 10 } = req.query;
+  console.log(req.query);
   let query = `SELECT DISTINCT
                     c.*,
-                    CONCAT(seller.Prenom_Client, ' ', seller.Nom_Client) as Seller_Name,
+                    CONCAT(seller.Name_Client, ' ', seller.Surname_Client) as Seller_Name,
                     CAST(ROUND(AVG(r.Note_Review), 2) AS FLOAT )as Average_Rating,
                     COUNT(r.ID_Review) as Total_Reviews
                  FROM Car c
                  LEFT JOIN Client seller ON c.ID_Seller = seller.ID_Client
-                 LEFT JOIN Review r ON c.ID_Car = r.ID_car
-                 JOIN Car_Availability ca ON c.ID_Car = ca.ID_Car`;
+                 LEFT JOIN Review r ON c.ID_Car = r.ID_Car`;
 
   let params = [];
-  let whereConditions = ['ca.Status = "available"'];
+  let whereConditions = [];
 
   if (startDate && endDate) {
-    whereConditions.push("ca.Date_Start_Available <= ?");
-    whereConditions.push("ca.Date_End_Available >= ?");
-    params.push(startDate, endDate);
+    whereConditions.push(`NOT EXISTS (
+          SELECT 1 FROM reservations res 
+          WHERE res.ID_Car = c.ID_Car 
+          AND res.Status NOT IN ('cancelled', 'completed') 
+          AND res.Date_Start_Reservation <= STR_TO_DATE(?, '%Y-%m-%d')  
+          AND res.Date_End_Reservation >= STR_TO_DATE(?, '%Y-%m-%d')
+        )`);
+    params.push(endDate, startDate);
   }
 
-  if (whereConditions.length > 0) {
-    query += " WHERE " + whereConditions.join(" AND ");
-  }
-
-  query += " GROUP BY c.ID_Car ORDER BY c.Created_At DESC";
-
-  if (limit) {
-    query += " LIMIT ?";
-    params.push(parseInt(limit));
-  }
-
-  const db = new database.Database();
-  const conn = db.connect();
-
-  conn.query(query, params, function (err, results) {
-    if (err) {
-      console.error("Database error:", err);
-      res.status(500).json({ error: "Database error occurred" });
-      db.disconnect(conn);
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      data: results || [],
-      count: results ? results.length : 0,
-    });
-    db.disconnect(conn);
-  });
-}
-
-function searchCars(req, res) {
-  const {
-    marque,
-    modele,
-    priceMin,
-    priceMax,
-    yearMin,
-    yearMax,
-    limit = 10,
-    location,
-  } = req.params;
-  console.log("Data from req.query: ", req.query);
-  console.log(
-    "query : ",
-    marque,
-    modele,
-    priceMin,
-    priceMax,
-    yearMin,
-    yearMax,
-    limit,
-    location,
-  );
-
-  let query = `SELECT 
-                    c.*,
-                    CONCAT(seller.Prenom_Client, ' ', seller.Nom_Client) as Seller_Name,
-                    ROUND(AVG(r.Note_Review), 2) as Average_Rating,
-                    COUNT(r.ID_Review) as Total_Reviews
-                  FROM Car c
-                  LEFT JOIN Client seller ON c.ID_Seller = seller.ID_Client
-                  LEFT JOIN Review r ON c.ID_Car = r.ID_car
-                  LEFT JOIN reservations re ON c.ID_Car = re.ID_Car `;
-
-  let whereConditions = [];
-  let params = [];
-
-  if (marque) {
-    whereConditions.push("c.Marque_Car LIKE ?");
-    params.push(`%${marque}%`);
-  }
-
-  if (modele) {
-    whereConditions.push("c.Modele_Car LIKE ?");
-    params.push(`%${modele}%`);
-  }
-
-  if (priceMin) {
-    whereConditions.push("c.Price_Car >= ?");
-    params.push(parseInt(priceMin));
-  }
-
-  if (priceMax) {
-    whereConditions.push("c.Price_Car <= ?");
-    params.push(parseInt(priceMax));
-  }
-
-  if (yearMin) {
-    whereConditions.push("c.Annee_Car >= ?");
-    params.push(parseInt(yearMin));
-  }
-
-  if (yearMax) {
-    whereConditions.push("c.Annee_Car <= ?");
-    params.push(parseInt(yearMax));
-  }
   if (location) {
     whereConditions.push("c.Location_Car LIKE ?");
-    params.push(`%${location}%`);
+    params.push(`${location}`);
+  }
+
+  if (passenger) {
+    whereConditions.push("c.Passenger_Car >= ?");
+    params.push(parseInt(passenger));
   }
 
   if (whereConditions.length > 0) {
@@ -750,6 +667,7 @@ function searchCars(req, res) {
   const db = new database.Database();
   const conn = db.connect();
 
+  console.log(query, params);
   conn.query(query, params, function (err, results) {
     if (err) {
       console.error("Database error:", err);
@@ -757,7 +675,7 @@ function searchCars(req, res) {
       db.disconnect(conn);
       return;
     }
-
+    console.log("Available cars retrieved:", results.length);
     res.status(200).json({
       success: true,
       data: results || [],
@@ -766,6 +684,7 @@ function searchCars(req, res) {
     db.disconnect(conn);
   });
 }
+
 /**
  * Get single car image metadata
  */
@@ -858,7 +777,7 @@ async function getCarImage(req, res) {
 
 async function getCarImages(req, res) {
   const { carId } = req.params;
-  console.log("carId : ", carId);
+
   if (!carId) {
     return res.status(400).json({ error: "Car ID is required" });
   }
@@ -877,9 +796,13 @@ async function getCarImages(req, res) {
 
   try {
     const db = new database.Database();
-    const conn = await db.connect(); // Make sure your Database class returns a promise
+    const conn = await db.connect();
 
-    const [results] = await conn.promise().query(query, [carId]);
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    let [results] = await conn.promise().query(query, [carId]);
+    results = results.map(
+      (image) => (image.Image_Path = `${baseUrl}${image.Image_Path}`),
+    );
     res.status(200).json({
       success: true,
       data: results || [],
@@ -893,313 +816,14 @@ async function getCarImages(req, res) {
   }
 }
 
-/**
- * Serve image file directly
- */
-async function serveCarImage(req, res) {
-  try {
-    const { carId, imageId } = req.params;
-    const { size = "original" } = req.query;
-    const conn = new database.Database().connect();
-
-    // Get image details
-    const [images] = await conn.query(
-      `
-            SELECT Image_Path, Image_Name, Image_Format 
-            FROM Car_Images 
-            WHERE ID_Image = ? AND ID_Car = ? AND Is_Active = 1
-        `,
-      [imageId, carId],
-    );
-
-    conn.end();
-
-    if (images.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Image not found",
-      });
-    }
-
-    const image = images[0];
-    let imagePath = path.join(__dirname, "../../../", image.Image_Path);
-
-    // Handle different sizes
-    if (
-      size !== "original" &&
-      ["thumbnail", "medium", "large"].includes(size)
-    ) {
-      const directory = path.dirname(imagePath);
-      const baseName = path.parse(image.Image_Name).name;
-      const extension = path.parse(image.Image_Name).ext;
-      const sizedFilename = `${baseName}_${size}${extension}`;
-      imagePath = path.join(directory, sizedFilename);
-    }
-
-    // Check if file exists
-    if (!(await fs.pathExists(imagePath))) {
-      return res.status(404).json({
-        success: false,
-        message: "Image file not found",
-      });
-    }
-
-    // Set appropriate headers
-    const mimeTypes = {
-      jpg: "image/jpeg",
-      jpeg: "image/jpeg",
-      png: "image/png",
-      webp: "image/webp",
-      gif: "image/gif",
-    };
-
-    const mimeType =
-      mimeTypes[image.Image_Format.toLowerCase()] || "application/octet-stream";
-
-    res.setHeader("Content-Type", mimeType);
-    res.setHeader("Cache-Control", "public, max-age=31536000"); // 1 year cache
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${image.Image_Name}"`,
-    );
-
-    // Stream the file
-    const fileStream = fs.createReadStream(imagePath);
-    fileStream.pipe(res);
-
-    fileStream.on("error", (error) => {
-      console.error("Error streaming file:", error);
-      if (!res.headersSent) {
-        res.status(500).json({
-          success: false,
-          message: "Error serving image",
-        });
-      }
-    });
-  } catch (error) {
-    console.error("Error serving car image:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-}
-
-/**
- * Upload image as base64
- */
-async function uploadImageBase64(req, res) {
-  try {
-    const { carId } = req.params;
-    const { images } = req.body; // Array of base64 images
-    const clientId = req.user.id;
-    const conn = new database.Database().connect();
-
-    if (!images || !Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Images array is required",
-      });
-    }
-
-    // Validate car exists and user owns it
-    const [car] = await conn.query(
-      "SELECT ID_Car, ID_Seller FROM Car WHERE ID_Car = ?",
-      [carId],
-    );
-
-    if (car.length === 0) {
-      conn.end();
-      return res.status(404).json({
-        success: false,
-        message: "Car not found",
-      });
-    }
-
-    if (car[0].ID_Seller !== clientId && req.user.role !== "admin") {
-      conn.end();
-      return res.status(403).json({
-        success: false,
-        message: "You can only upload images for your own cars",
-      });
-    }
-
-    const uploadedImages = [];
-    const uploadDir = path.join(
-      __dirname,
-      "../../../uploads/cars",
-      carId.toString(),
-    );
-    await fs.ensureDir(uploadDir);
-
-    for (const imageData of images) {
-      try {
-        const {
-          base64,
-          filename,
-          type = "other",
-          description = "",
-          displayOrder = 0,
-        } = imageData;
-
-        if (!base64) {
-          continue; // Skip invalid entries
-        }
-
-        // Extract format from data URL if provided
-        let format = "jpg";
-        let base64Data = base64;
-
-        if (base64.startsWith("data:")) {
-          const matches = base64.match(/data:image\/([^;]+);base64,(.+)/);
-          if (matches) {
-            format = matches[1];
-            base64Data = matches[2];
-          }
-        }
-
-        // Generate unique filename
-        const timestamp = Date.now();
-        const randomString = Math.random().toString(36).substring(7);
-        const generatedFilename =
-          filename || `${timestamp}_${randomString}.${format}`;
-        const filePath = path.join(uploadDir, generatedFilename);
-
-        // Convert base64 to buffer and save
-        const imageBuffer = Buffer.from(base64Data, "base64");
-        await fs.writeFile(filePath, imageBuffer);
-
-        // Get image dimensions using sharp
-        const sharp = require("sharp");
-        const metadata = await sharp(filePath).metadata();
-
-        // Create different sizes
-        const sizes = await createImageSizes(filePath, generatedFilename);
-
-        // Save to database
-        const [result] = await conn.query(
-          `
-                    INSERT INTO Car_Images (
-                        ID_Car, 
-                        Image_Path, 
-                        Image_Name, 
-                        Original_Name, 
-                        Image_Type, 
-                        Image_Description, 
-                        Image_Size, 
-                        Image_Width, 
-                        Image_Height, 
-                        Image_Format, 
-                        Display_Order, 
-                        Is_Primary, 
-                        Uploaded_By
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `,
-          [
-            carId,
-            `/uploads/cars/${carId}/${generatedFilename}`,
-            generatedFilename,
-            filename || generatedFilename,
-            type,
-            description,
-            imageBuffer.length,
-            metadata.width,
-            metadata.height,
-            format,
-            displayOrder,
-            uploadedImages.length === 0 ? 1 : 0, // First image is primary
-            clientId,
-          ],
-        );
-
-        uploadedImages.push({
-          id: result.insertId,
-          filename: generatedFilename,
-          originalName: filename || generatedFilename,
-          path: `/uploads/cars/${carId}/${generatedFilename}`,
-          type: type,
-          size: imageBuffer.length,
-          dimensions: {
-            width: metadata.width,
-            height: metadata.height,
-          },
-          sizes: sizes,
-        });
-      } catch (error) {
-        console.error("Error processing base64 image:", error);
-        // Continue with next image
-      }
-    }
-
-    conn.end();
-
-    res.status(201).json({
-      success: true,
-      message: `${uploadedImages.length} images uploaded successfully`,
-      data: uploadedImages,
-    });
-  } catch (error) {
-    console.error("Error uploading base64 images:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-}
-
-/**
- * Create different image sizes helper function
- */
-async function createImageSizes(originalPath, filename) {
-  const sharp = require("sharp");
-  const sizes = {};
-  const baseName = path.parse(filename).name;
-  const extension = path.parse(filename).ext;
-  const directory = path.dirname(originalPath);
-
-  const sizeConfigs = {
-    thumbnail: { width: 150, height: 150, quality: 80 },
-    medium: { width: 500, height: 400, quality: 85 },
-    large: { width: 1200, height: 800, quality: 90 },
-  };
-
-  for (const [sizeName, config] of Object.entries(sizeConfigs)) {
-    try {
-      const newFilename = `${baseName}_${sizeName}${extension}`;
-      const newPath = path.join(directory, newFilename);
-
-      await sharp(originalPath)
-        .resize(config.width, config.height, {
-          fit: "cover",
-          position: "center",
-        })
-        .jpeg({ quality: config.quality })
-        .toFile(newPath);
-
-      sizes[sizeName] = {
-        filename: newFilename,
-        width: config.width,
-        height: config.height,
-      };
-    } catch (error) {
-      console.error(`Error creating ${sizeName} size:`, error);
-    }
-  }
-
-  return sizes;
-}
-
 module.exports = {
   getCars,
   getCarById,
-  getCarImages,
-  getCarImage,
   getMyCars,
   createCar,
   updateCar,
   deleteCar,
   getAvailableCars,
-  searchCars,
+  getCarImage,
+  getCarImages,
 };

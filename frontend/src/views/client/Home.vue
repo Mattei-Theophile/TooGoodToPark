@@ -1,21 +1,35 @@
 <script setup lang="ts">
-import SearchBar from '@/components/SearchBar.vue'
 import ResumeHistory from '@/components/history/ResumeHistory.vue'
 import CarCarousel from '@/components/car/carCarousel.vue'
 </script>
 
 <template>
-  <h2>Novelty</h2>
-  <car-carousel />
+  <div class="home-view">
+    <section>
+      <car-carousel />
+    </section>
 
-  <h2>Rental history</h2>
-  <ResumeHistory :default-limit-show="1" />
-  <search-bar />
+    <v-container>
+      <v-row>
+        <v-col cols="12">
+          <div class="history-wrapper">
+            <h2 class="text-h5 font-weight-bold">Rental history</h2>
+            <ResumeHistory :default-limit-show="3" />
+          </div>
+        </v-col>
+      </v-row>
+    </v-container>
+  </div>
 </template>
 
 <style scoped>
-h2 {
-  font-size: 2rem;
-  font-weight: 600;
+.home-view {
+  padding-bottom: 100px; /* Space for bottom nav on mobile */
+}
+
+@media (min-width: 960px) {
+  .home-view {
+    padding-bottom: 0;
+  }
 }
 </style>

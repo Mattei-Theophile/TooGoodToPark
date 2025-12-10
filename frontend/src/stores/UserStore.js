@@ -12,6 +12,19 @@ export const useUserStore = defineStore(
       return !!accessToken.value && isAuthenticated.value
     }
 
+    const register = async (credentials) => {
+      try {
+        const res = await api.post('/auth/register', credentials)
+        return { success: res.success }
+      } catch (err) {
+        console.log(err)
+        return {
+          success: false,
+          message: err.message,
+        }
+      }
+    }
+
     const login = async (credentials) => {
       try {
         const res = await api.post('/auth/login', credentials)
@@ -82,6 +95,7 @@ export const useUserStore = defineStore(
       accessToken,
       isAuthenticated,
       isLoggedIn,
+      register,
       login,
       logout,
       clearAuth,

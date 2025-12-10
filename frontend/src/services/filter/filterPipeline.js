@@ -1,5 +1,5 @@
 export const filterFunctions = {
-  byMileage: (cars, order = 'asc') => {
+  Mileage: (cars, order = 'asc') => {
     let results = cars
     if (order === 'asc') {
       results = results.sort((a, b) => a.mileage - b.mileage)
@@ -9,7 +9,7 @@ export const filterFunctions = {
     return results
   },
 
-  byPrice: (cars, order = 'asc') => {
+  Price: (cars, order = 'asc') => {
     let results = cars
     if (order === 'asc') {
       results = results.sort((a, b) => a.price - b.price)
@@ -19,7 +19,7 @@ export const filterFunctions = {
     return results
   },
 
-  byRating: (cars, order = 'asc') => {
+  Rating: (cars, order = 'asc') => {
     let results = cars
     if (order === 'asc') {
       results = cars.sort((a, b) => a.Average_Rating - b.Average_Rating)
@@ -28,17 +28,17 @@ export const filterFunctions = {
     }
     return results
   },
-  byBrand: (cars, brand) => {
+  Brand: (cars, brand) => {
     return cars.filter((cars) => cars.brand === brand)
   },
-  byModel: (cars, model) => {
+  Model: (cars, model) => {
     return cars.filter((cars) => cars.Modele_Car === model)
   },
-  byLocation: (cars, location) => {
+  Location: (cars, location) => {
     return cars.filter((cars) => cars.Location_car === location)
   },
 
-  byYearOfCreation: (cars, year, order = 'asc') => {
+  YearOfCreation: (cars, year, order = 'asc') => {
     let results = cars
     if (order === 'asc') {
       results = cars.sort((a, b) => a.Annee_Car - b.Annee_Car)

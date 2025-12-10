@@ -21,28 +21,16 @@ module.exports = {
   createReview: {
     method: "post",
     route: "/cars/:id/reviews",
-    action: [
-      auth.authenticateTokenWithRefresh,
-      verifyIsNotReviewOwner,
-      createReview,
-    ],
+    action: [auth.authenticateTokenWithRefresh, createReview],
   },
   updateReview: {
     method: "put",
     route: "/reviews/:id",
-    action: [
-      auth.authenticateTokenWithRefresh,
-      verifyIsReviewOwner,
-      updateReview,
-    ],
+    action: [auth.authenticateTokenWithRefresh, updateReview],
   },
   deleteReview: {
     method: "delete",
     route: "/reviews/:id",
-    action: [
-      auth.authenticateTokenWithRefresh,
-      verifyIsReviewOwner,
-      deleteReview,
-    ],
+    action: [auth.authenticateTokenWithRefresh, deleteReview],
   },
 };

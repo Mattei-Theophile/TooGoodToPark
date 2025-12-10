@@ -1,5 +1,5 @@
-const bcrypt = require('bcrypt');
-const {Database} = require('../database/database');
+const bcrypt = require("bcrypt");
+const { Database } = require("../database/database");
 
 // Email validation regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -8,93 +8,90 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
 
 async function hashPassword(password) {
-    const saltRounds = 12;
-    return await bcrypt.hash(password, saltRounds);
+  const saltRounds = 12;
+  return await bcrypt.hash(password, saltRounds);
 }
 
 // Check if email already exists
 async function checkEmailExists(email) {
-    const db = new Database();
-    const connection = db.connect();
+  const db = new Database();
+  const connection = db.connect();
 
-    try {
-        const [rows] = await connection.promise().query(
-            'SELECT ID_Client FROM Client WHERE Email_Client = ?',
-            [email]
-        );
-        return rows.length > 0;
-    } finally {
-        db.disconnect(connection);
-    }
+  try {
+    const [rows] = await connection
+      .promise()
+      .query("SELECT ID_Client FROM Client WHERE Email_Client = ?", [email]);
+    return rows.length > 0;
+  } finally {
+    db.disconnect(connection);
+  }
 }
 
 // Validate registration data
 function validateRegistrationData(data) {
-    const errors = [];
-    const { email, password, lastname, firstname, phonenumber } = data;
-    console.log(data);
-    // Required fields validation
-    if (!email || !email.trim()) {
-        errors.push('Email is required');
-    } else if (!emailRegex.test(email)) {
-        errors.push('Please provide a valid email address');
-    }
+  const errors = [];
+  const { email, password, lastname, firstname, phonenumber } = data;
+  console.log(data);
+  // Required fields validation
+  if (!email || !email.trim()) {
+    errors.push("Email is required");
+  } else if (!emailRegex.test(email)) {
+    errors.push("Please provide a valid email address");
+  }
 
-    if (!password || password.length < 8) {
-        errors.push('Password must be at least 8 characters long');
-    }
+  if (!password || password.length < 8) {
+    errors.push("Password must be at least 8 characters long");
+  }
 
-    if (!lastname || !lastname.trim()) {
-        errors.push('Last name is required');
-    } else if (lastname.length > 50) {
-        errors.push('Last name must be less than 50 characters');
-    }
+  if (!lastname || !lastname.trim()) {
+    errors.push("Last name is required");
+  } else if (lastname.length > 50) {
+    errors.push("Last name must be less than 50 characters");
+  }
 
-    if (!firstname || !firstname.trim()) {
-        errors.push('First name is required');
-    } else if (firstname.length > 50) {
-        errors.push('First name must be less than 50 characters');
-    }
+  if (!firstname || !firstname.trim()) {
+    errors.push("First name is required");
+  } else if (firstname.length > 50) {
+    errors.push("First name must be less than 50 characters");
+  }
 
-    if (!phonenumber || !phonenumber.trim()) {
-        errors.push('Phone number is required');
-    } else if (!phoneRegex.test(phonenumber.replace(/\s/g, ''))) {
-        errors.push('Please provide a valid phone number');
-    } else if (phonenumber.length > 50) {
-        errors.push('Phone number must be less than 50 characters');
-    }
+  if (!phonenumber || !phonenumber.trim()) {
+    errors.push("Phone number is required");
+  } else if (!phoneRegex.test(phonenumber.replace(/\s/g, ""))) {
+    errors.push("Please provide a valid phone number");
+  } else if (phonenumber.length > 50) {
+    errors.push("Phone number must be less than 50 characters");
+  }
 
-    return errors;
+  return errors;
 }
 
 // Create a new user
 async function createUser(userData) {
-    const { email, password, nom, prenom, numeroTelephone, typeAbonnement = 1, prixAbonnement = 0, dateDebut = new Date(), dateFin = null } = userData;
+  const { email, password, surname, name, phonenumber } = userData;
 
-    const db = new Database();
-    const connection = db.connect();
+  const db = new Database();
+  const connection = db.connect();
 
-    try {
-        const hashedPassword = await hashPassword(password);
-        const formattedDateDebut = dateDebut ? new Date(dateDebut).toISOString().slice(0, 19).replace('T', ' ') : null;
-        const formattedDateFin = dateFin ? new Date(dateFin).toISOString().slice(0, 19).replace('T', ' ') : null;
+  try {
+    const hashedPassword = await hashPassword(password);
 
-        const [result] = await connection.promise().query(
-            'INSERT INTO Client (Email_Client, Password_Client, Nom_Client, Prenom_Client, Numero_Telephone) VALUES (?, ?, ?, ?, ?)',
-            [email, hashedPassword, nom, prenom, numeroTelephone]
-        );
+    const [result] = await connection
+      .promise()
+      .query(
+        "INSERT INTO Client (Email_Client, Password_Client, Surname_Client, Name_Client, PhoneNumber_Client) VALUES (?, ?, ?, ?, ?)",
+        [email, hashedPassword, surname, name, phonenumber],
+      );
 
-        return {
-            id: result.insertId,
-            email: email,
-            nom: nom,
-            prenom: prenom,
-            numeroTelephone: numeroTelephone,
-            role: typeAbonnement
-        };
-    } finally {
-        db.disconnect(connection);
-    }
+    return {
+      id: result.insertId,
+      email: email,
+      surname: surname,
+      name: name,
+    };
+  } finally {
+    db.disconnect(connection);
+  }
 }
 
 /**
@@ -193,113 +190,107 @@ async function createUser(userData) {
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 exports.register = async (req, res) => {
-    const { email, password, lastname, firstname, phonenumber } = req.body;
+  const { email, password, lastname, firstname, phonenumber } = req.body;
 
+  try {
+    // Validate input data
+    const validationErrors = validateRegistrationData({
+      email,
+      password,
+      lastname,
+      firstname,
+      phonenumber,
+    });
 
-
-    try {
-        // Validate input data
-        const validationErrors = validateRegistrationData({
-            email, password, lastname, firstname, phonenumber
-        });
-
-        if (validationErrors.length > 0) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation failed',
-                details: validationErrors
-            });
-        }
-
-        // Check if email already exists
-        const emailExists = await checkEmailExists(email.toLowerCase());
-        if (emailExists) {
-            return res.status(409).json({
-                success: false,
-                error: 'Email already registered'
-            });
-        }
-
-        // Create new user
-        const newUser = await createUser({
-            email: email.toLowerCase(),
-            password,
-            nom: lastname.trim(),
-            prenom: firstname.trim(),
-            numeroTelephone: phonenumber.trim(),
-
-        });
-
-        res.send(200).json({
-            success: true,
-            user: newUser
-        })
-
-    } catch (error) {
-        console.error('Registration error:', error);
-
-        // Handle specific MySQL errors
-        if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(409).json({
-                success: false,
-                error: 'Email already registered'
-            });
-        }
-
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error during registration'
-        });
+    if (validationErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        details: validationErrors,
+      });
     }
+
+    // Check if email already exists
+    const emailExists = await checkEmailExists(email.toLowerCase());
+    if (emailExists) {
+      return res.status(409).json({
+        success: false,
+        error: "Email already registered",
+      });
+    }
+
+    // Create new user
+    const newUser = await createUser({
+      email: email.toLowerCase(),
+      password,
+      surname: lastname.trim(),
+      name: firstname.trim(),
+      phonenumber: phonenumber.trim(),
+    });
+
+    res.send(200).json({
+      success: true,
+      user: newUser,
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+
+    // Handle specific MySQL errors
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        success: false,
+        error: "Email already registered",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: "Internal server error during registration",
+    });
+  }
 };
 
 // Get user profile by ID
 exports.getUserProfile = async (req, res) => {
+  const userId = req.user.id; // From authenticated token
 
-    const userId = req.user.id; // From authenticated token
+  const db = new Database();
+  const connection = db.connect();
 
-    const db = new Database();
-    const connection = db.connect();
+  try {
+    const [rows] = await connection
+      .promise()
+      .query(
+        "SELECT ID_Client as id, Email_Client as email, Surname_Client as surname, Name_Client as name, Client.PhoneNumber_Client as phoneNumber, Address_Client as address, ZipCode_Client as zipCode, City_Client as city, Country_Client as country FROM Client WHERE ID_Client = ?",
+        [userId],
+      );
 
-    try {
-        const [rows] = await connection.promise().query(
-            'SELECT ID_Client as id, Email_Client as email, Nom_Client as nom, Prenom_Client as prenom, Numero_Telephone as numeroTelephone FROM Client WHERE ID_Client = ?',
-            [userId]
-        );
-
-        if (rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found'
-            });
-        }
-
-
-        res.json({
-            success: true,
-            user: rows[0]
-        });
-
-
-    } catch (error) {
-        console.error('Get user profile error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Internal server error'
-        });
-    } finally {
-        db.disconnect(connection);
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
     }
+
+    res.json({
+      success: true,
+      user: rows[0],
+    });
+  } catch (error) {
+    console.error("Get user profile error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  } finally {
+    db.disconnect(connection);
+  }
 };
 
 module.exports = {
-    register: exports.register,
-    getUserProfile: exports.getUserProfile,
-    createUser,
-    checkEmailExists,
-    validateRegistrationData
+  register: exports.register,
+  getUserProfile: exports.getUserProfile,
 };
-
 
 /**
  * @swagger

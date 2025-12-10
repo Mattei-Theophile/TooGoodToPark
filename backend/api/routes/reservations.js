@@ -22,11 +22,6 @@ module.exports = {
     route: "/cars/myreservations",
     action: [auth.authenticateTokenWithRefresh, reservation.getMyReservations],
   },
-  getMonthlyStats: {
-    method: "get",
-    route: "/cars/myreservations/stats/monthly",
-    action: [auth.authenticateTokenWithRefresh, reservation.getMonthlyStats],
-  },
   createReservation: {
     method: "post",
     route: "/cars/reservations",

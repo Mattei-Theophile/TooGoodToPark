@@ -11,7 +11,7 @@ const verifyIsCarOwner = createOwnershipVerifier({
   resourceName: "car",
   isOwner: true,
   idSource: "body", // Car check uses req.body
-  idKeys: ["ID_Car"],
+  idKeys: ["carId"],
   errorMsg: "You can only modify your own car listings",
 });
 
@@ -21,7 +21,7 @@ const verifyIsNotCarOwner = createOwnershipVerifier({
   resourceName: "car",
   isOwner: false,
   idSource: "body",
-  idKeys: ["ID_Car"],
+  idKeys: ["carId"],
   errorMsg: "You cannot perform this action on your own car listing",
 });
 
@@ -31,7 +31,7 @@ const verifyAreCarsOwner = createMultipleOwnershipVerifier({
   resourceName: "cars",
   isOwner: true,
   idKey: "carIds",
-  idProperty: "ID_Car",
+  idProperty: "carId",
   errorMsg: "You can only modify your own car listings",
 });
 
@@ -41,7 +41,7 @@ const verifyAreNotCarsOwner = createMultipleOwnershipVerifier({
   resourceName: "cars",
   isOwner: false,
   idKey: "carIds",
-  idProperty: "ID_Car",
+  idProperty: "carId",
   errorMsg:
     "You cannot perform this action on one or more of your own car listings",
 });

@@ -1,6 +1,5 @@
-<script setup>
-import { ref, computed, useTemplateRef } from 'vue'
-import { onClickOutside } from '@vueuse/core'
+<script setup lang="ts">
+import { ref } from 'vue'
 import { Review } from '@/services/review.js'
 
 const props = defineProps({
@@ -11,105 +10,80 @@ const props = defineProps({
 })
 
 const addReviewBox = ref(false)
-const target = useTemplateRef < HTMLElement > 'commentary-form'
+const review = ref(new Review())
 
-const review = ref(null)
-review.value = new Review()
+// Initialize with car ID
 review.value.car.initById(props.ID_Car)
-
-// This stores the temporary hover state
-const hoverRating = ref(0)
-// review.value.rating now stores the *actual* clicked rating
-
-// The rating to display is the hover value, or (if not hovering) the clicked value.
-const displayRating = computed(() => {
-  return hoverRating.value || review.value.rating
-})
-
-// setRating permanently sets the *actual* rating
-function setRating(rating) {
-  review.value.rating = rating
-}
-
-// setHoverRating temporarily sets the *hover* rating
-function setHoverRating(rating) {
-  hoverRating.value = rating
-}
-
-// When the mouse leaves, reset the *hover* rating to 0
-function resetHoverRating() {
-  hoverRating.value = 0
-}
+// Initialize rating to 0 ensures v-rating works correctly
+review.value.rating = 0
 
 const launchCreateCommentary = async () => {
-  console.log(review.value.rating)
-  console.log(review.value.commentary)
+  if (!review.value.rating || !review.value.commentary) {
+    // Basic validation feedback could go here
+    return
+  }
+
   const res = await review.value.createReview()
   console.log(res)
+
+  // Optional: Reset form and close box on success
+  addReviewBox.value = false
+  review.value.commentary = ''
+  review.value.rating = 0
 }
 </script>
 
 <template>
-  <div class="add-commentary-container">
-    <button class="add-commentary-button" @click="addReviewBox = !addReviewBox">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        fill="currentColor"
-        class="bi bi-plus"
-        viewBox="0 0 16 16"
-      >
-        <path
-          d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"
-        />
-      </svg>
-    </button>
+  <div class="d-flex flex-column align-end my-4">
+    <v-btn
+      color="#216c37"
+      theme="dark"
+      prepend-icon="mdi-plus"
+      @click="addReviewBox = !addReviewBox"
+      rounded="lg"
+      elevation="2"
+    >
+      Add a commentary
+    </v-btn>
 
-    <div v-if="addReviewBox" class="add-commentary-box">
-      <form @submit.prevent="launchCreateCommentary">
-        <label for="commentary-rating">Rating</label>
+    <v-expand-transition>
+      <v-card v-if="addReviewBox" width="100%" class="mt-4 pa-4" elevation="2" rounded="lg" border>
+        <div class="d-flex flex-column gap-2">
+          <div class="d-flex flex-column mb-2">
+            <label class="text-subtitle-1 font-weight-medium mb-1">Rating</label>
+            <v-rating
+              v-model="review.rating"
+              hover
+              color="amber-darken-2"
+              active-color="amber-warning"
+              density="comfortable"
+              size="large"
+            ></v-rating>
+          </div>
 
-        <div class="star-rating" @mouseleave="resetHoverRating">
-          <span
-            v-for="star in 5"
-            :key="star"
-            class="star"
-            :class="{ filled: star <= displayRating }"
-            @mouseover="setHoverRating(star)"
-            @click="setRating(star)"
+          <v-textarea
+            v-model="review.commentary"
+            label="Your Comment"
+            variant="outlined"
+            color="#216c37"
+            rows="3"
+            auto-grow
+            hide-details="auto"
+            class="mb-4"
+          ></v-textarea>
+
+          <v-btn
+            block
+            color="#216c37"
+            theme="dark"
+            size="large"
+            @click="launchCreateCommentary"
+            :disabled="!review.rating"
           >
-            ★
-          </span>
+            Create Review
+          </v-btn>
         </div>
-
-        <label for="commentary-text">Comment</label>
-        <input v-model="review.commentary" type="text" id="commentary-text" />
-
-        <button type="submit">create the review</button>
-      </form>
-    </div>
+      </v-card>
+    </v-expand-transition>
   </div>
 </template>
-
-<style scoped>
-.add-commentary-box {
-  position: absolute;
-}
-
-.star-rating {
-  display: inline-block;
-}
-
-.star {
-  font-size: 2.5rem; /* Adjust size as needed */
-  color: #ccc; /* Empty star color */
-  cursor: pointer;
-  transition: color 0.2s ease-in-out;
-}
-
-/* This class is added dynamically */
-.star.filled {
-  color: #fdd835; /* Filled star color (gold) */
-}
-</style>

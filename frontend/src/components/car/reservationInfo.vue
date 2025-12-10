@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeMount } from 'vue'
-let settingsCarMenu = ref(false)
-const isLoading = ref(true)
+import { ref, onBeforeMount, computed } from 'vue'
+
 const props = defineProps({
   reservation: {
     type: Object,
@@ -9,156 +8,138 @@ const props = defineProps({
   },
 })
 
-onBeforeMount(() => {
-  props.reservation.car.fetchCarById()
+const isLoading = ref(true)
+
+// Helper to format dates cleanly
+const formatDate = (dateString: string) => {
+  if (!dateString) return ''
+  return new Date(dateString)
+    .toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+    .replace(/\//g, '.')
+}
+
+const pricePerDay = computed(() => {
+  if (!props.reservation?.price || !props.reservation?.totalDays) return '0.00'
+  return (props.reservation.price / props.reservation.totalDays).toFixed(2)
+})
+
+onBeforeMount(async () => {
+  if (props.reservation?.car) {
+    // Await these if they return promises, otherwise keep as is
+    await props.reservation.car.fetchCarById()
+    await props.reservation.car.fetchCarImages()
+  }
   isLoading.value = false
 })
-console.log(props.reservation)
+
 const handleDelete = async () => {
-  console.log(props.reservation)
   const res = props.reservation.delete()
-  console.log(res)
+  console.log('Deleted:', res)
 }
 </script>
 
 <template>
-  <div v-if="isLoading" class="loading-container"></div>
-  <div v-else-if="!props.reservation" class="error-container">error lors de l'affichage</div>
-  <div v-else>
-    <div class="information-car">
-      <div class="header-car">
-        <img src="" alt="" />
-        <div>
-          <h3 class="name-car">{{ props.reservation.car.brand }}</h3>
-          <p>
-            price of the reservation : {{ props.reservation.price }} for
-            {{ props.reservation.totalDays }} days
-          </p>
+  <v-skeleton-loader
+    v-if="isLoading"
+    type="image, list-item-two-line"
+    class="mb-4 rounded-lg"
+    height="150"
+  ></v-skeleton-loader>
+
+  <v-alert v-else-if="!props.reservation" type="error" variant="tonal" class="mb-4">
+    Error loading reservation display.
+  </v-alert>
+
+  <v-card v-else elevation="2" rounded="lg" class="mb-4 reservation-card">
+    <v-row no-gutters>
+      <v-col cols="4" sm="3" md="2">
+        <v-img
+          :src="props.reservation.car.images?.[0]"
+          alt="Car Image"
+          cover
+          height="100%"
+          class="rounded-s-lg"
+          min-height="120"
+        >
+        </v-img>
+      </v-col>
+
+      <v-col cols="8" sm="9" md="10">
+        <div class="d-flex flex-column h-100 pa-3">
+          <div class="d-flex justify-space-between align-start">
+            <div>
+              <div class="text-h6 font-weight-bold text-truncate">
+                {{ props.reservation.car.brand }} {{ props.reservation.car.model }}
+              </div>
+              <div class="text-subtitle-1 text-green-darken-2 font-weight-bold">
+                £{{ pricePerDay }} <span class="text-body-2 text-grey">/ day</span>
+              </div>
+            </div>
+
+            <div class="d-flex align-center">
+              <v-btn
+                :to="`/announce/${props.reservation.car.id}`"
+                icon="mdi-text-box-search-outline"
+                variant="text"
+                color="grey-darken-1"
+                density="comfortable"
+                title="View Details"
+              ></v-btn>
+
+              <v-menu location="bottom end">
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    icon="mdi-dots-vertical"
+                    variant="text"
+                    color="grey-darken-1"
+                    density="comfortable"
+                  ></v-btn>
+                </template>
+
+                <v-list density="compact" elevation="3" rounded="lg">
+                  <v-list-item @click="handleDelete" base-color="error">
+                    <template v-slot:prepend>
+                      <v-icon icon="mdi-trash-can-outline"></v-icon>
+                    </template>
+                    <v-list-item-title>Delete Reservation</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+            </div>
+          </div>
+
+          <v-divider class="my-2"></v-divider>
+
+          <div class="d-flex align-center text-body-2 text-grey-darken-2 mt-auto">
+            <v-icon icon="mdi-calendar-range" start size="small" class="mr-2"></v-icon>
+            <span>{{ formatDate(props.reservation.start) }}</span>
+            <v-icon icon="mdi-arrow-right" size="small" class="mx-2 text-grey-lighten-1"></v-icon>
+            <span>{{ formatDate(props.reservation.end) }}</span>
+          </div>
         </div>
-
-        <div class="dates-car">
-          <p>{{ new Date(props.reservation.start).toLocaleDateString() }}</p>
-          <p>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-arrow-right"
-              viewBox="0 0 16 16"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"
-              />
-            </svg>
-          </p>
-          <p>{{ new Date(props.reservation.end).toLocaleDateString() }}</p>
-        </div>
-      </div>
-
-      <div class="option-menu-container">
-        <button class="card-information-car">
-          <router-link :to="{ name: 'Announce', query: { id: props.reservation.car.id } }">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="32"
-              height="32"
-              fill="currentColor"
-              class="bi bi-card-list"
-              viewBox="0 0 16 16"
-            >
-              <path
-                d="M14.5 3a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5zm-13-1A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2z"
-              />
-              <path
-                d="M5 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 5 8m0-2.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m0 5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5m-1-5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0M4 8a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0m0 2.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0"
-              />
-            </svg>
-          </router-link>
-        </button>
-
-        <button class="settings-history-car" @click="settingsCarMenu = !settingsCarMenu">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="32"
-            height="32"
-            fill="currentColor"
-            class="bi bi-three-dots"
-            viewBox="0 0 16 16"
-          >
-            <path
-              d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"
-            />
-          </svg>
-        </button>
-
-        <div v-if="settingsCarMenu" class="settings-car-menu">
-          <ul>
-            <li>
-              <button @click="handleDelete" class="delete-reservation">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  fill="currentColor"
-                  class="bi bi-trash-fill"
-                  viewBox="0 0 16 16"
-                >
-                  <path
-                    d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"
-                  />
-                </svg>
-                delete
-              </button>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
+      </v-col>
+    </v-row>
+  </v-card>
 </template>
 
 <style scoped>
-.information-car {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  gap: 1rem;
-  margin: 0.5rem 0;
-  background-color: #f4f4f4;
-  border-radius: 10px;
+/* Almost no CSS needed!
+   Vuetify utility classes handle spacing (pa-3, my-2),
+   typography (text-h6), and layout (d-flex).
+*/
+
+.reservation-card {
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
-.header-car {
-  display: flex;
-  flex-direction: column;
-  margin: 0 0.5rem;
-  .dates-car {
-    display: flex;
-    flex-direction: row;
-    p {
-      margin: 0 0.5rem;
-    }
-  }
-}
-
-.name-car {
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-.option-menu-container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 1rem;
-  svg {
-    fill: #000000;
-  }
-}
-.settings-car-menu {
-  background-color: #f4f4f4;
-  border-radius: 10px;
+.reservation-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 </style>

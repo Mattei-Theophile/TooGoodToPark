@@ -35,7 +35,7 @@ export class Review {
       // The data to send in the request body
       const reviewData = {
         rating: this.rating,
-        commentary: this.commentary,
+        comment: this.commentary,
       }
 
       // POST to the car's review collection

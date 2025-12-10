@@ -8,8 +8,9 @@ import { Car } from '@/services/Car'
 const isLoading = ref(true)
 
 const router = useRouter()
-const routeQuery = router.currentRoute.value.query
-
+const props = defineProps({
+  id: String,
+})
 // Reactive data
 const selectedDateRange = ref({
   departure: null,
@@ -19,45 +20,40 @@ const car = ref(null)
 car.value = new Car()
 const selectedImageIndex = ref(0)
 
-// Computed properties
 const currentCarImage = computed(() => car.value?.images[selectedImageIndex.value])
-
 const availableImages = computed(() => car.value?.images || [])
 
-// Image carousel functions
 const selectImage = (index) => {
   selectedImageIndex.value = index
 }
-
 const isImageSelected = (index) => {
   return selectedImageIndex.value === index
 }
 
-// Editor functions
-const toggleEditorMode = () => {
-  editorMode.value = !editorMode.value
-}
-
-// Date selection handler
+const isErrorDateSelected = ref(false)
 const handleDateSelection = (selectedDates) => {
   selectedDateRange.value.departure = selectedDates.start
   selectedDateRange.value.return = selectedDates.end
 }
 
-// Navigation
 const launchReservation = async () => {
-  await router.push({
-    path: '/reservation',
-    query: {
-      id: routeQuery.id,
-      departure: selectedDateRange.value.departure,
-      return: selectedDateRange.value.return,
-    },
-  })
+  if (selectedDateRange.value.departure && selectedDateRange.value.return) {
+    await router.push({
+      path: '/reservation',
+      query: {
+        id: props.id,
+        departure: selectedDateRange.value.departure,
+        return: selectedDateRange.value.return,
+      },
+    })
+  } else {
+    isErrorDateSelected.value = true
+  }
 }
-const loadCar = async () => {
+
+onMounted(async () => {
   try {
-    car.value.initById(routeQuery.id)
+    car.value.initById(props.id)
     await car.value.fetchCarById()
     await car.value.fetchCarImages()
     console.log(car)
@@ -66,127 +62,153 @@ const loadCar = async () => {
     console.error(error)
     isLoading.value = true
   }
-}
-
-onMounted(() => {
-  loadCar()
-  // TODO: Load car details and images based on routeQuery.id
 })
 </script>
 
 <template>
-  <div v-if="isLoading" class="loading">Loading cars...</div>
-  <div v-else>
-    <!-- Car Details Section -->
-    <div class="car-container">
-      <div class="description-car">
-        <button class="return-button">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="48"
-            height="48"
-            fill="currentColor"
-            class="bi bi-arrow-left-short"
-            viewBox="0 0 16 16"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M12 8a.5.5 0 0 1-.5.5H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5a.5.5 0 0 1 .5.5"
-            />
-          </svg>
-        </button>
-        <div class="description-car-container">
-          <div class="header-description-car">
-            <h3 class="name-car">
-              {{ car?.brand + car?.model }}
-            </h3>
-            <p class="location-car">{{ car?.mileage }}</p>
+  <v-container fluid>
+    <v-row v-if="isLoading" align="center" justify="center" class="my-10">
+      <v-col cols="12" class="text-center">
+        <v-progress-circular indeterminate color="primary" size="48" />
+      </v-col>
+    </v-row>
+
+    <v-row v-else class="announce-container">
+      <v-col cols="12">
+        <!-- Car Details Section -->
+        <v-card flat class="car-container">
+          <v-sheet class="description-car-container" rounded="lg">
+            <div class="header-description-car">
+              <h3 class="name-car">{{ car?.brand }} {{ car?.model }}</h3>
+            </div>
+            <div class="price-car d-flex align-center">
+              <v-chip color="primary" variant="elevated" size="large" class="font-weight-bold mr-2">
+                {{ car?.price }}€
+              </v-chip>
+              <span>/day</span>
+            </div>
+          </v-sheet>
+
+          <!-- Image Gallery Section -->
+          <div v-if="availableImages.length > 0">
+            <v-img :src="currentCarImage" class="show-image-car" cover rounded="lg" />
+            <div class="images-car-carousel-container mt-4">
+              <v-btn
+                v-for="(image, index) in availableImages"
+                :key="index"
+                :variant="isImageSelected(index) ? 'flat' : 'text'"
+                :color="isImageSelected(index) ? 'primary' : undefined"
+                size="small"
+                class="pa-0"
+                @click="selectImage(index)"
+              >
+                <v-img
+                  :src="image"
+                  :alt="`Car image ${index + 1}`"
+                  class="image-car"
+                  cover
+                  rounded
+                />
+              </v-btn>
+            </div>
+
+            <div class="technical-car-information">
+              <v-chip color="secondary" class="ma-2">
+                <v-icon start icon="mdi-calendar"></v-icon>
+                Year: {{ car?.year }}
+              </v-chip>
+              <v-chip color="secondary" class="ma-2">
+                <v-icon start icon="mdi-seat"></v-icon>
+                Passengers: {{ car?.passenger }}
+              </v-chip>
+              <v-chip color="secondary" class="ma-2">
+                <v-icon start icon="mdi-map-marker"></v-icon>
+                Location: {{ car?.location }}
+              </v-chip>
+
+              <v-chip color="secondary" class="ma-2">
+                <v-icon start icon="mdi-gas-station"> </v-icon>
+                Mileage : {{ car?.mileage }}
+              </v-chip>
+            </div>
           </div>
-          <p class="price-car">
-            <span>{{ car?.price }}€</span>/day
-          </p>
+
+          <!-- Reviews Section -->
+          <v-card-title class="px-0 pt-6">Review and comments</v-card-title>
+          <v-card-text class="px-0">
+            <review :ID_Car="props.id" />
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <!-- Reservation Section -->
+      <div class="reservation-container">
+        <div class="button-reservation-container">
+          <reservationcalendar
+            :ID_Car="props.id"
+            @dateSelected="handleDateSelection"
+            id="reservation-calendar"
+          />
+
+          <v-btn color="#216c37" size="x-large" class="pay-button" @click="launchReservation">
+            Reserve and pay
+          </v-btn>
         </div>
+        <v-snackbar v-model="isErrorDateSelected" :timeout="2000" color="error" top>
+          Please select a date for your booking
+          <template v-slot:actions>
+            <v-btn color="white" text @click="isErrorDateSelected = false"> Close </v-btn>
+          </template>
+        </v-snackbar>
       </div>
-
-      <!-- Image Gallery Section -->
-      <div v-if="availableImages.length > 0">
-        <div>
-          <img class="show-image-car" :src="currentCarImage" alt="Selected car image" />
-        </div>
-        <div class="images-car-carousel-container">
-          <button
-            v-for="(image, index) in availableImages"
-            :key="index"
-            :class="{ selectedImageCar: isImageSelected(index) }"
-            @click="selectImage(index)"
-          >
-            <img class="image-car" :src="image" :alt="`Car image ${index + 1}`" />
-          </button>
-        </div>
-      </div>
-
-      <div>
-    </div>
-
-    <!-- Reviews Section -->
-    <div>
-      <h2>Review and comments</h2>
-      <review :ID_Car="routeQuery.id" />
-    </div>
-
-    <!-- Reservation Section -->
-    <div class="reservation-container">
-      <button class="pay-button" @click="launchReservation">Reserve and pay</button>
-      <reservationcalendar :ID_Car="routeQuery.id" @dateSelected="handleDateSelection" />
-    </div>
-  </div>
+    </v-row>
+  </v-container>
 </template>
 
 <style scoped>
+.announce-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 5rem;
+}
+
 .car-container {
   display: flex;
   flex-direction: column;
   gap: 2rem;
 }
-.description-car {
-  display: flex;
-  flex-direction: row;
-  gap: 2rem;
-  padding: 1rem 0;
-  border-bottom: 2px solid #dcdcdc;
-  .return-button {
-    background-color: #f4f4f4;
-    border-radius: 10px;
-    padding: 0 1rem;
-  }
-}
+
 .description-car-container {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  width: 90%;
+  align-items: center;
+  width: 100%;
   gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 2px solid #dcdcdc;
+  background-color: #216c37;
+  color: #fff;
 }
 .header-description-car {
   display: flex;
   flex-direction: column;
   padding: 0;
   .name-car {
-    margin: 0;
+    margin: 0 1rem;
     font-weight: bold;
     font-size: 1.5rem;
   }
   .location-car {
-    margin: 0;
-    color: gray;
+    margin: 0 1rem;
   }
 }
 .price-car {
-  color: gray;
+  margin: 1rem;
   span {
     font-weight: bold;
     font-size: 1.7rem;
-    color: black;
   }
 }
 .images-car-carousel-container {
@@ -199,6 +221,7 @@ onMounted(() => {
     border-radius: 10px;
   }
 }
+
 .selectedImageCar {
   filter: brightness(30%);
 }
@@ -207,18 +230,57 @@ onMounted(() => {
   height: 300px;
   border-radius: 10px;
 }
+
+.technical-car-information {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-radius: 10px;
+}
+
 .reservation-container {
+  position: fixed;
+  bottom: 100px;
+  width: 100%;
+}
+
+.button-reservation-container {
   display: flex;
   align-items: center;
+  margin: 0 0.5rem;
   gap: 0.5rem;
   .pay-button {
-    background-color: #000000;
-    color: #ffffff;
-    border-radius: 10px;
-    padding: 1rem 5rem;
-    font-size: 1.2rem;
+    height: 70px;
+    padding: 0 5rem;
     font-weight: bold;
-    text-align: end;
+  }
+}
+
+#reservation-calendar {
+  display: block;
+}
+.error {
+  color: red;
+  padding: 1rem;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+@media (min-width: 960px) {
+  .announce-container {
+    flex-direction: row;
+  }
+
+  .reservation-container {
+    position: static;
+    align-self: flex-start;
+  }
+  .button-reservation-container {
+    flex-direction: row;
+    gap: 1rem;
   }
 }
 </style>

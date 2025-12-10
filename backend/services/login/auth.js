@@ -126,7 +126,6 @@ const authenticateTokenWithRefresh = (req, res, next) => {
  */
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  console.log(req.body);
   // Validate input
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required" });
@@ -171,7 +170,7 @@ async function validateUserCredentials(email, password) {
     const [rows] = await connection
       .promise()
       .query(
-        "SELECT ID_Client as id, Email_Client as email, Password_Client as password, ID_Role as role FROM Client WHERE Email_Client = ?",
+        "SELECT ID_Client as id, Email_Client as email, Password_Client as password FROM Client WHERE Email_Client = ?",
         [email],
       );
 
@@ -240,24 +239,18 @@ exports.refreshToken = async (req, res) => {
 
   try {
     const decoded = verifyToken(refreshToken);
-    console.log("decoded :");
-    console.log(decoded);
     if (decoded.type !== "refresh") {
       throw new Error("Invalid token type");
     }
 
     // Get user from database
     const user = await getUserById(decoded.id);
-    console.log("user : ");
-    console.log(user);
     if (!user) {
       throw new Error("User not found");
     }
 
     // Generate new access token
     const newAccessToken = generateToken(user);
-    console.log("newAccessToken :");
-    console.log(newAccessToken);
     res.json({
       success: true,
       accessToken: newAccessToken,
@@ -309,7 +302,7 @@ async function getUserById(userId) {
     const [rows] = await connection
       .promise()
       .query(
-        "SELECT ID_Client as id, Email_Client as email, ID_Role as role FROM Client WHERE ID_Client = ?",
+        "SELECT ID_Client as id, Email_Client as email FROM Client WHERE ID_Client = ?",
         [userId],
       );
 
