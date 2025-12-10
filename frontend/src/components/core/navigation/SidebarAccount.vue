@@ -2,6 +2,9 @@
 import { computed, defineProps, ref, watch } from 'vue'
 import Logout from '@/components/core/authentification/Logout.vue'
 import logo from '@/assets/logo_TGTP_white.png'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
 import { useDisplay } from 'vuetify'
 
 const props = defineProps(['modelValue'])
@@ -17,7 +20,11 @@ const { mobile } = useDisplay()
 
 <template>
   <v-navigation-drawer v-model="internalDrawer" color="white" class="rounded-e-xl" elevation="2">
-    <div class="d-flex align-center pa-4" style="background-color: #216c37; color: white">
+    <div
+      @click="$router.push('/')"
+      class="d-flex align-center pa-4"
+      style="background-color: #216c37; color: white"
+    >
       <v-img :src="logo" alt="TooGoodToPark Logo" width="40" height="40" class="mr-3"></v-img>
       <h3 class="text-h6 font-weight-bold mb-0">TooGood<br />ToPark</h3>
     </div>

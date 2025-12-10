@@ -40,7 +40,6 @@ export class Car {
   async fetchCarById() {
     try {
       const res = await this.api.get(`/car/${this.id}`)
-      console.log(res.data)
       this.initAllBySettings(res.data)
     } catch (error) {
       this.handleApiError(error, 'fetching car by ID')
@@ -50,6 +49,7 @@ export class Car {
   async fetchCarImages() {
     try {
       const response = await this.api.get(`/car/${this.id}/images`)
+      this.images = [] // Clear existing before pushing to avoid duplicates
       if (response.data.length > 0) {
         this.images.push(...response.data)
       }
@@ -84,46 +84,83 @@ export class Car {
     }
   }
 
-  async uploadImages(formData) {
+  // Modified to handle single image upload (File, Object, or Base64)
+  async uploadImages(imageInput) {
     try {
-      console.log('Uploading images for car ID:', this.id)
+      console.log('Uploading image for car ID:', this.id)
+
+      // Handle Base64 string (from EditCar new images)
+      if (typeof imageInput === 'string' && imageInput.startsWith('data:')) {
+        // Send as JSON body for Base64
+        await this.api.post(`/cars/${this.id}/images`, {
+          images: [imageInput],
+        })
+        return
+      }
+
+      // Handle File object or Wrapper { file: File } (from AddCar)
       const fd = new FormData()
-      fd.append('images', formData)
+      if (imageInput instanceof File) {
+        fd.append('images', imageInput)
+      } else if (imageInput.file instanceof File) {
+        fd.append('images', imageInput.file)
+      } else {
+        console.warn('Invalid image format skipped:', imageInput)
+        return
+      }
+
       const response = await this.api.post(`/cars/${this.id}/images`, fd)
-      console.log(response)
+      console.log('Image uploaded:', response)
     } catch (error) {
       this.handleApiError(error, 'uploading car images')
     }
   }
 
-  async updateImages(imageList) {
+  // Refactored to perform one-by-one Add/Delete instead of Bulk Replace
+  async updateImages(currentVisualList) {
     try {
-      console.log('Updating images for car ID:', this.id)
-      const fd = new FormData()
+      console.log('Synchronizing images one-by-one...')
 
-      imageList.forEach((imgObj) => {
-        if (imgObj.file instanceof File) {
-          // New File: Append as binary. Multer catches 'images'
-          fd.append('images', imgObj.file)
-        } else if (typeof imgObj.preview === 'string') {
-          // Existing Image: Append URL string. Backend parses body.images
-          fd.append('images', imgObj.preview)
+      const currentIds = new Set()
+      currentVisualList.forEach((img) => {
+        if (img && typeof img === 'object' && img.ID_Image) {
+          currentIds.add(img.ID_Image)
         }
       })
+      console.log(currentVisualList.length, 'images to be uploaded.')
 
-      // Corrected: Pass fd directly as data.
-      // Axios handles Content-Type: multipart/form-data automatically when data is FormData.
-      const response = await this.api.put(`/cars/${this.id}/images`, fd)
-      console.log('Images updated:', response)
-      return response
+      for (const originalImg of this.images) {
+        if (!currentIds.has(originalImg.ID_Image)) {
+          console.log(`Deleting image ID: ${originalImg.ID_Image}`)
+          await this.deleteImage(originalImg)
+        }
+      }
+      console.log('Removed images successfully deleted.')
+      console.log(currentVisualList.length, 'images to be uploaded.')
+      // 2. Identify and Upload New Images
+      // New images are either Base64 strings or Objects with a .file property
+      for (const img of currentVisualList) {
+        console.log('Processing image:', img)
+        const isBase64 = typeof img === 'string' && img.startsWith('data:')
+        const isFileObj = img && img.file instanceof File
+
+        if (isBase64 || isFileObj) {
+          await this.uploadImages(img)
+        }
+      }
+
+      // Refresh the internal state after sync
+      await this.fetchCarImages()
     } catch (error) {
       this.handleApiError(error, 'updating car images')
     }
   }
 
-  async deleteImage(imageId) {
+  async deleteImage(imageUrl) {
     try {
-      const response = await this.api.delete(`/cars/${this.id}/images/${imageId}`)
+      let imageName = imageUrl.split('/')
+      imageName = imageName[imageName.length - 1]
+      const response = await this.api.delete(`/cars/${this.id}/images/${imageName}`)
       return response
     } catch (error) {
       this.handleApiError(error, 'deleting car image')

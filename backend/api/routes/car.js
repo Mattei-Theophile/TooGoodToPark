@@ -91,7 +91,7 @@ module.exports = {
   },
   deleteCarImages: {
     method: "delete",
-    route: "/cars/:carId/images",
+    route: "/cars/:carId/images/:imageUrl",
     action: [auth.authenticateTokenWithRefresh, deleteCarImage],
   },
 };

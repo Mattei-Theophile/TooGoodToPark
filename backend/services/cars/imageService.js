@@ -243,6 +243,8 @@ async function processSingleImage(
  */
 async function deletePhysicalImageFiles(imageRelativePath, imageName) {
   try {
+    console.log("Deleting physical image files:", imageRelativePath);
+    console.log("Image Name:", imageName);
     const imagePath = path.join(process.cwd(), imageRelativePath);
     const directory = path.dirname(imagePath);
     const baseName = path.parse(imageName).name;
@@ -579,7 +581,7 @@ async function createImageSizes(originalPath, filename) {
  * Service: Delete car image (Backend use)
  */
 async function deleteCarImage(req, res) {
-  const { carId, imageId } = req.params;
+  const { carId, imageUrl } = req.params;
   if (!carId) {
     return res
       .status(400)
@@ -597,11 +599,12 @@ async function deleteCarImage(req, res) {
         .json({ success: false, message: access.message });
     }
 
+    console.log("Deleting image:", imageUrl, " cardId", carId);
     const [image] = await conn
       .promise()
       .query(
-        "SELECT Image_Path, Image_Name FROM Car_Images WHERE ID_Image = ? AND ID_Car = ?",
-        [imageId, carId],
+        "SELECT Image_Path, Image_Name FROM Car_Images WHERE Image_Name = ? AND ID_Car = ?",
+        [imageUrl, carId],
       );
 
     if (image.length === 0) {
@@ -609,12 +612,14 @@ async function deleteCarImage(req, res) {
         .status(404)
         .json({ success: false, message: "Image not found" });
     }
-
+    console.log("Image found:", image[0]);
     // Execute deletion in parallel
     await Promise.all([
       conn
         .promise()
-        .query("DELETE FROM Car_Images WHERE ID_Image = ?", [imageId]),
+        .query("DELETE FROM Car_Images WHERE Image_Name = ?", [
+          image[0].Image_Name,
+        ]),
       deletePhysicalImageFiles(image[0].Image_Path, image[0].Image_Name),
     ]);
 
